@@ -67,7 +67,7 @@ export const useUser = () => {
     } catch (error) {
       walletLogger.error('Error saving connection state', error);
     }
-  }, [connectionState]);
+  }, []);
 
   // Save user preferences to storage
   const saveUserPreferences = useCallback((preferences: Partial<UserPreferences>) => {
@@ -78,17 +78,20 @@ export const useUser = () => {
     } catch (error) {
       walletLogger.error('Error saving user preferences', error);
     }
-  }, [userPreferences]);
+  }, []);
 
   // Save last connected wallet
   const saveLastConnectedWallet = useCallback((walletType: string) => {
     try {
       walletStorage.setLastConnectedWallet(walletType);
-      saveConnectionState({ walletType });
+      // Update connection state directly to avoid infinite loop
+      const newState = { ...connectionState, walletType };
+      setConnectionState(newState);
+      walletStorage.setConnectionState(newState);
     } catch (error) {
       walletLogger.error('Error saving last connected wallet', error);
     }
-  }, [saveConnectionState]);
+  }, []);
 
   // Get last connected wallet
   const getLastConnectedWallet = useCallback(() => {
@@ -139,14 +142,23 @@ export const useUser = () => {
   const connectWallet = useCallback(async (connector: any) => {
     try {
       await connect({ connector });
-      saveLastConnectedWallet(connector.id);
-      saveConnectionState({
+      
+      // Update all states directly to avoid dependency loops
+      const newConnectionState = {
         isConnected: true,
         walletType: connector.id,
         address: address || null,
         lastConnectedAt: Date.now()
-      });
-      saveUserPreferences({ lastConnectedAt: Date.now() });
+      };
+      
+      const newUserPreferences = { ...userPreferences, lastConnectedAt: Date.now() };
+      
+      // Update states and storage
+      setConnectionState(newConnectionState);
+      setUserPreferences(newUserPreferences);
+      walletStorage.setConnectionState(newConnectionState);
+      walletStorage.setUserPreferences(newUserPreferences);
+      walletStorage.setLastConnectedWallet(connector.id);
       
       toast.success(`Connected to ${connector.name}`);
       return true;
@@ -155,7 +167,7 @@ export const useUser = () => {
       toast.error('Connection failed. Please try again.');
       return false;
     }
-  }, [connect, address, saveLastConnectedWallet, saveConnectionState, saveUserPreferences]);
+  }, [connect, address, userPreferences]);
 
   // Enhanced disconnect function with persistence
   const disconnectWallet = useCallback(() => {

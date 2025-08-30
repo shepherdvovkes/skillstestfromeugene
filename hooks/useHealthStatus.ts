@@ -1,0 +1,77 @@
+import { useState, useEffect } from 'react';
+import { useWalletService } from '@/contexts/ServiceContext';
+import { useNetworkService } from '@/contexts/ServiceContext';
+
+export interface HealthStatus {
+  isHealthy: boolean;
+  lastCheck: number;
+  connectionAge: number;
+  networkLatency: number;
+  errorCount: number;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'disconnected';
+  issues: string[];
+}
+
+export const useHealthStatus = (): HealthStatus => {
+  const walletService = useWalletService();
+  const networkService = useNetworkService();
+  
+  const [health, setHealth] = useState<HealthStatus>({
+    isHealthy: true,
+    lastCheck: Date.now(),
+    connectionAge: 0,
+    networkLatency: 0,
+    errorCount: 0,
+    status: 'healthy',
+    issues: []
+  });
+
+  useEffect(() => {
+    const updateHealth = () => {
+      const isConnected = walletService.isConnected();
+      const currentNetwork = networkService.getCurrentNetwork();
+      
+      const issues: string[] = [];
+      let isHealthy = true;
+
+      // Check connection status
+      if (!isConnected) {
+        issues.push('Wallet disconnected');
+        isHealthy = false;
+      }
+
+      // Check network status
+      if (currentNetwork && !networkService.isNetworkSupported(currentNetwork.id)) {
+        issues.push(`Unsupported network: ${currentNetwork.name}`);
+        isHealthy = false;
+      }
+
+      // Determine status
+      let status: HealthStatus['status'] = 'healthy';
+      if (!isHealthy) {
+        status = issues.length >= 2 ? 'unhealthy' : 'degraded';
+      }
+      if (!isConnected) {
+        status = 'disconnected';
+      }
+
+      setHealth(prev => ({
+        ...prev,
+        isHealthy,
+        lastCheck: Date.now(),
+        status,
+        issues
+      }));
+    };
+
+    // Update health immediately
+    updateHealth();
+
+    // Set up interval for periodic health checks
+    const interval = setInterval(updateHealth, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [walletService, networkService]);
+
+  return health;
+};

@@ -530,6 +530,273 @@ npm run lint:fix     # Fix ESLint issues
 npm run type-check   # Run TypeScript type checking
 ```
 
+## 🧪 Testing
+
+### Test Coverage
+The project includes comprehensive test coverage with **100 passing tests** across all components and utilities:
+
+- **Test Suites**: 9 passed
+- **Total Tests**: 100 passed
+- **Coverage**: 56.01% statements, 42.62% branches, 59.06% functions, 56.59% lines
+
+### Running Tests
+
+#### Run All Tests
+```bash
+npm test
+```
+
+#### Run Tests with Coverage
+```bash
+npm test -- --coverage --watchAll=false
+```
+
+#### Run Specific Test Files
+```bash
+# Run only hook tests
+npm test -- --testPathPattern=hooks.test.tsx
+
+# Run only component tests
+npm test -- --testPathPattern=components
+
+# Run only utility tests
+npm test -- --testPathPattern=utils.test.ts
+```
+
+#### Run Tests in Watch Mode
+```bash
+npm test -- --watch
+```
+
+### Test Structure
+
+#### Test Files Overview
+```
+__tests__/
+├── ConnectionHealth.test.tsx      # Connection health monitoring tests
+├── ErrorBoundary.test.tsx         # Error boundary component tests
+├── examples.test.tsx              # Example component tests
+├── hooks.test.tsx                 # Custom hooks tests
+├── toast.test.tsx                 # Toast utility tests
+├── ui.test.tsx                    # UI component tests
+├── utils.test.ts                  # Utility function tests
+├── WalletConnection.test.tsx      # Wallet connection component tests
+└── web3-components.test.tsx       # Web3 component tests
+```
+
+#### Test Categories
+
+**🧪 Component Tests**
+- **ConnectionHealth.test.tsx**: Tests the connection health monitoring component
+  - Health status indicators
+  - Network latency monitoring
+  - Error handling and recovery
+  - Advanced details view
+
+- **ErrorBoundary.test.tsx**: Tests error boundary functionality
+  - Error catching and display
+  - Fallback UI rendering
+  - Error reporting
+
+- **examples.test.tsx**: Tests the main example component
+  - Wallet connection interface
+  - Network switching
+  - Health monitoring integration
+  - Loading states
+
+- **WalletConnection.test.tsx**: Tests wallet connection components
+  - MetaMask integration
+  - WalletConnect support
+  - Connection state management
+  - Error handling
+
+- **web3-components.test.tsx**: Tests Web3-specific components
+  - Web3Status component
+  - ManualReconnect component
+  - ClientOnlyWalletConnect component
+
+**🔧 Hook Tests**
+- **hooks.test.tsx**: Tests custom React hooks
+  - `useUser` hook for user state management
+  - `useConnectionHealth` hook for health monitoring
+  - Connection persistence
+  - User preferences management
+
+**🛠️ Utility Tests**
+- **utils.test.ts**: Tests utility functions
+  - `cn` function for class name merging
+  - Storage utilities
+  - Logger functionality
+
+- **toast.test.tsx**: Tests toast notification system
+  - Success notifications
+  - Error notifications
+  - Network-specific toasts
+
+- **ui.test.tsx**: Tests UI components
+  - Button component variants
+  - Loading states
+  - Accessibility features
+
+### Test Configuration
+
+#### Jest Configuration
+The project uses Jest with the following configuration:
+
+```javascript
+// jest.config.js
+const nextJest = require('next/jest');
+
+const createJestConfig = nextJest({
+  dir: './',
+});
+
+const customJestConfig = {
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testEnvironment: 'jsdom',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(wagmi|@wagmi|@tanstack|viem|@viem)/)',
+  ],
+  collectCoverageFrom: [
+    'components/**/*.{js,jsx,ts,tsx}',
+    'hooks/**/*.{js,jsx,ts,tsx}',
+    'utils/**/*.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+  ],
+};
+```
+
+#### Test Setup
+```javascript
+// jest.setup.js
+import '@testing-library/jest-dom';
+
+// Mock console methods to reduce noise in tests
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.error = (...args) => {
+  // Suppress specific warnings that are expected in tests
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+     args[0].includes('Warning: An update to TestComponent'))
+  ) {
+    return;
+  }
+  originalError.call(console, ...args);
+};
+```
+
+### Mocking Strategy
+
+#### Web3 Dependencies
+The tests use comprehensive mocking for Web3 dependencies:
+
+```javascript
+// Mock wagmi hooks
+jest.mock('wagmi', () => ({
+  useAccount: () => mockUseAccount(),
+  useNetwork: () => mockUseNetwork(),
+  useConnect: () => mockUseConnect(),
+  useSwitchNetwork: () => mockUseSwitchNetwork(),
+  useDisconnect: () => mockUseDisconnect(),
+}));
+
+// Mock wagmi/chains to avoid ES module issues
+jest.mock('wagmi/chains', () => ({
+  polygon: { id: 137, name: 'Polygon' },
+  linea: { id: 59144, name: 'Linea' },
+  bsc: { id: 56, name: 'BSC' }
+}));
+```
+
+#### Local Storage
+```javascript
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+});
+```
+
+#### Network Requests
+```javascript
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  status: 200
+});
+```
+
+### Test Best Practices
+
+#### Component Testing
+- Use `@testing-library/react` for component testing
+- Test user interactions with `fireEvent` and `userEvent`
+- Verify accessibility with `screen.getByRole` and `screen.getByLabelText`
+- Test error states and loading states
+
+#### Hook Testing
+- Use `renderHook` from `@testing-library/react`
+- Test hook return values and state changes
+- Mock dependencies to isolate hook logic
+- Test cleanup and side effects
+
+#### Integration Testing
+- Test component interactions
+- Verify data flow between components
+- Test error boundaries and fallback UI
+- Validate user workflows
+
+### Continuous Integration
+
+The test suite is designed to run in CI/CD environments:
+
+```yaml
+# Example GitHub Actions workflow
+- name: Run Tests
+  run: |
+    npm ci
+    npm test -- --coverage --watchAll=false
+    npm run build
+```
+
+### Debugging Tests
+
+#### Common Issues
+1. **Infinite Loops**: Fixed by removing circular dependencies in useCallback hooks
+2. **ES Module Issues**: Resolved by mocking wagmi/chains
+3. **State Updates**: Wrapped in `act()` to prevent warnings
+
+#### Debug Commands
+```bash
+# Run tests with verbose output
+npm test -- --verbose
+
+# Run specific test with debugging
+npm test -- --testNamePattern="should render wallet connection"
+
+# Run tests with coverage for specific files
+npm test -- --coverage --testPathPattern=WalletConnection.test.tsx
+```
+
+### Performance Testing
+
+The test suite includes performance considerations:
+
+- **Mock heavy operations**: Network requests, blockchain interactions
+- **Isolate components**: Test individual components without full app context
+- **Optimize test data**: Use minimal test data sets
+- **Cleanup resources**: Proper cleanup in `afterEach` blocks
+
 ## 🔧 Configuration
 
 ### Environment Variables

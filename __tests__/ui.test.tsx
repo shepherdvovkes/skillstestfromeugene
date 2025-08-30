@@ -103,7 +103,7 @@ describe('UI Components', () => {
 
     it('handles loading timeout', async () => {
       jest.useFakeTimers();
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const loggerSpy = jest.spyOn(require('@/utils/logger').logger, 'warn').mockImplementation(() => {});
       
       render(<Button loading loadingTimeout={1000}>Timeout Test</Button>);
       
@@ -115,10 +115,10 @@ describe('UI Components', () => {
         jest.advanceTimersByTime(1000);
       });
       
-      expect(consoleSpy).toHaveBeenCalledWith('Button loading state timeout - auto-resetting');
+      expect(loggerSpy).toHaveBeenCalledWith('Button loading state timeout - auto-resetting');
       
       jest.useRealTimers();
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
 
     it('syncs external loading state', () => {

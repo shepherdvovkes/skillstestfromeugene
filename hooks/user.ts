@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { toast } from 'react-hot-toast';
-
-// Connection state persistence keys
-const STORAGE_KEYS = {
-  LAST_CONNECTED_WALLET: 'lastConnectedWallet',
-  CONNECTION_STATE: 'walletConnectionState',
-  USER_PREFERENCES: 'userWalletPreferences'
-} as const;
+import { APP_CONFIG } from '@/config/constants';
+import { walletStorage } from '@/utils/storage';
+import { walletLogger } from '@/utils/logger';
 
 // User preferences interface
 interface UserPreferences {
@@ -40,68 +36,66 @@ export const useUser = () => {
   
   const [userPreferences, setUserPreferences] = useState<UserPreferences>({
     autoReconnect: true,
-    preferredNetworks: [137, 59144, 56], // Polygon, Linea, BSC
+    preferredNetworks: APP_CONFIG.DEFAULT_NETWORK_IDS,
     lastConnectedAt: 0
   });
 
-  // Load connection state from localStorage
+  // Load connection state from storage
   const loadConnectionState = useCallback(() => {
     try {
-      const savedState = localStorage.getItem(STORAGE_KEYS.CONNECTION_STATE);
-      const savedPreferences = localStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
+      const savedState = walletStorage.getConnectionState();
+      const savedPreferences = walletStorage.getUserPreferences();
       
       if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        setConnectionState(parsedState);
+        setConnectionState(savedState);
       }
       
       if (savedPreferences) {
-        const parsedPreferences = JSON.parse(savedPreferences);
-        setUserPreferences(parsedPreferences);
+        setUserPreferences(savedPreferences);
       }
     } catch (error) {
-      console.error('Error loading connection state:', error);
+      walletLogger.error('Error loading connection state', error);
     }
   }, []);
 
-  // Save connection state to localStorage
+  // Save connection state to storage
   const saveConnectionState = useCallback((state: Partial<ConnectionState>) => {
     try {
       const newState = { ...connectionState, ...state };
       setConnectionState(newState);
-      localStorage.setItem(STORAGE_KEYS.CONNECTION_STATE, JSON.stringify(newState));
+      walletStorage.setConnectionState(newState);
     } catch (error) {
-      console.error('Error saving connection state:', error);
+      walletLogger.error('Error saving connection state', error);
     }
   }, [connectionState]);
 
-  // Save user preferences to localStorage
+  // Save user preferences to storage
   const saveUserPreferences = useCallback((preferences: Partial<UserPreferences>) => {
     try {
       const newPreferences = { ...userPreferences, ...preferences };
       setUserPreferences(newPreferences);
-      localStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(newPreferences));
+      walletStorage.setUserPreferences(newPreferences);
     } catch (error) {
-      console.error('Error saving user preferences:', error);
+      walletLogger.error('Error saving user preferences', error);
     }
   }, [userPreferences]);
 
   // Save last connected wallet
   const saveLastConnectedWallet = useCallback((walletType: string) => {
     try {
-      localStorage.setItem(STORAGE_KEYS.LAST_CONNECTED_WALLET, walletType);
+      walletStorage.setLastConnectedWallet(walletType);
       saveConnectionState({ walletType });
     } catch (error) {
-      console.error('Error saving last connected wallet:', error);
+      walletLogger.error('Error saving last connected wallet', error);
     }
   }, [saveConnectionState]);
 
   // Get last connected wallet
   const getLastConnectedWallet = useCallback(() => {
     try {
-      return localStorage.getItem(STORAGE_KEYS.LAST_CONNECTED_WALLET);
+      return walletStorage.getLastConnectedWallet();
     } catch (error) {
-      console.error('Error getting last connected wallet:', error);
+      walletLogger.error('Error getting last connected wallet', error);
       return null;
     }
   }, []);
@@ -109,8 +103,7 @@ export const useUser = () => {
   // Clear connection state
   const clearConnectionState = useCallback(() => {
     try {
-      localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATE);
-      localStorage.removeItem(STORAGE_KEYS.LAST_CONNECTED_WALLET);
+      walletStorage.clearConnectionState();
       setConnectionState({
         isConnected: false,
         walletType: null,
@@ -119,7 +112,7 @@ export const useUser = () => {
         lastConnectedAt: null
       });
     } catch (error) {
-      console.error('Error clearing connection state:', error);
+      walletLogger.error('Error clearing connection state', error);
     }
   }, []);
 
@@ -137,7 +130,7 @@ export const useUser = () => {
       await connect({ connector });
       toast.success(`Auto-reconnected to ${connector.name}`);
     } catch (error) {
-      console.error('Auto-reconnect failed:', error);
+      walletLogger.error('Auto-reconnect failed', error);
       // Don't show error toast for auto-reconnect failures
     }
   }, [userPreferences.autoReconnect, getLastConnectedWallet, connectors, connect]);
@@ -158,7 +151,7 @@ export const useUser = () => {
       toast.success(`Connected to ${connector.name}`);
       return true;
     } catch (error) {
-      console.error('Connection failed:', error);
+      walletLogger.error('Connection failed', error);
       toast.error('Connection failed. Please try again.');
       return false;
     }
@@ -171,7 +164,7 @@ export const useUser = () => {
       clearConnectionState();
       toast.success('Wallet disconnected');
     } catch (error) {
-      console.error('Disconnect error:', error);
+      walletLogger.error('Disconnect error', error);
       toast.error('Error disconnecting wallet');
     }
   }, [disconnect, clearConnectionState]);

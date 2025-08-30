@@ -1,11 +1,12 @@
 import { toast, ToastOptions } from 'react-hot-toast';
+import { APP_CONFIG } from '@/config/constants';
 
 // Custom toast styles for wallet notifications
 const walletToastStyles: ToastOptions = {
-  duration: 4000,
-  position: 'top-right',
+  duration: APP_CONFIG.UI.TOAST_DURATION,
+  position: APP_CONFIG.UI.TOAST_POSITION,
   style: {
-    background: '#363636',
+    background: APP_CONFIG.UI.COLORS.BACKGROUND,
     color: '#fff',
     borderRadius: '8px',
     padding: '12px 16px',
@@ -20,8 +21,8 @@ const errorToastStyles: ToastOptions = {
   ...walletToastStyles,
   style: {
     ...walletToastStyles.style,
-    background: '#dc2626',
-    border: '1px solid #ef4444',
+    background: APP_CONFIG.UI.COLORS.ERROR,
+    border: `1px solid ${APP_CONFIG.UI.COLORS.BORDER_ERROR}`,
   },
 };
 
@@ -29,8 +30,8 @@ const successToastStyles: ToastOptions = {
   ...walletToastStyles,
   style: {
     ...walletToastStyles.style,
-    background: '#059669',
-    border: '1px solid #10b981',
+    background: APP_CONFIG.UI.COLORS.SUCCESS,
+    border: `1px solid ${APP_CONFIG.UI.COLORS.BORDER_SUCCESS}`,
   },
 };
 
@@ -38,8 +39,8 @@ const warningToastStyles: ToastOptions = {
   ...walletToastStyles,
   style: {
     ...walletToastStyles.style,
-    background: '#d97706',
-    border: '1px solid #f59e0b',
+    background: APP_CONFIG.UI.COLORS.WARNING,
+    border: `1px solid ${APP_CONFIG.UI.COLORS.BORDER_WARNING}`,
   },
 };
 

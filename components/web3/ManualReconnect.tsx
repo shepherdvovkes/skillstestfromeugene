@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useConnect, useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { walletConnectionToast } from '@/utils/toast';
+import { APP_CONFIG } from '@/config/constants';
+import { walletStorage } from '@/utils/storage';
+import { walletLogger } from '@/utils/logger';
 
 interface ManualReconnectProps {
   onConnectionChange?: (isConnected: boolean) => void;
@@ -13,9 +16,9 @@ export const ManualReconnect: React.FC<ManualReconnectProps> = ({ onConnectionCh
   const [lastConnectedWallet, setLastConnectedWallet] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
-  // Load last connected wallet from localStorage
+  // Load last connected wallet from storage
   useEffect(() => {
-    const savedWallet = localStorage.getItem('lastConnectedWallet');
+    const savedWallet = walletStorage.getLastConnectedWallet();
     if (savedWallet) {
       setLastConnectedWallet(savedWallet);
     }
@@ -37,7 +40,7 @@ export const ManualReconnect: React.FC<ManualReconnectProps> = ({ onConnectionCh
       onConnectionChange?.(true);
     } catch (error) {
       walletConnectionToast.failed(lastConnectedWallet, String(error));
-      console.error('Manual reconnect error:', error);
+      walletLogger.error('Manual reconnect error', error);
     } finally {
       setIsReconnecting(false);
     }

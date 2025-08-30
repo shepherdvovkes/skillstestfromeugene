@@ -5,12 +5,14 @@ import { networkToast } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
 import { ClientOnlyWalletConnect } from './ClientOnlyWalletConnect';
 import { ManualReconnect } from './ManualReconnect';
+import { APP_CONFIG } from '@/config/constants';
+import { networkLogger } from '@/utils/logger';
 
 // Supported networks configuration
 const supportedNetworks = [
-  { ...polygon, name: 'Polygon' },
-  { ...linea, name: 'Linea' },
-  { ...bsc, name: 'BSC' }
+  { ...polygon, name: APP_CONFIG.NETWORKS.POLYGON.name },
+  { ...linea, name: APP_CONFIG.NETWORKS.LINEA.name },
+  { ...bsc, name: APP_CONFIG.NETWORKS.BSC.name }
 ];
 
 // Network status indicators
@@ -84,7 +86,7 @@ export const Web3Status: React.FC<Web3StatusProps> = ({ className }) => {
       networkToast.switchSuccess(targetNetwork?.name || 'Network');
     } catch (error) {
       networkToast.switchError(targetNetwork?.name || 'Network', String(error));
-      console.error('Network switch error:', error);
+      networkLogger.error('Network switch error', error);
     }
   };
 

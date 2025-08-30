@@ -2,17 +2,20 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { walletConnectionToast } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
+import { APP_CONFIG } from '@/config/constants';
+import { walletStorage } from '@/utils/storage';
+import { walletLogger } from '@/utils/logger';
 
 // Enhanced error handling for each wallet type
 const handleWalletError = (error: any, walletType: string) => {
   // Don't show toast for specific MetaMask errors to avoid spam
-  if (error?.code === -32002) {
-    console.warn(`MetaMask is already processing a request. Please wait.`);
+  if (error?.code === APP_CONFIG.ERROR_CODES.METAMASK_PENDING_REQUEST) {
+    walletLogger.warn(`MetaMask is already processing a request. Please wait.`);
     return;
   }
   
   walletConnectionToast.failed(walletType, error?.message);
-  console.error(`Wallet connection error (${walletType}):`, error);
+  walletLogger.error(`Wallet connection error (${walletType})`, error);
 };
 
 interface WalletConnectProps {
@@ -56,7 +59,7 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnectionChange
       await connect({ connector });
       
       // Save connection state for persistence
-      localStorage.setItem('lastConnectedWallet', walletType);
+      walletStorage.setLastConnectedWallet(walletType);
       
       walletConnectionToast.connected(connector.name);
       onConnectionChange?.(true);
@@ -75,7 +78,7 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnectionChange
   // Handle disconnect
   const handleDisconnect = useCallback(() => {
     disconnect();
-    localStorage.removeItem('lastConnectedWallet');
+    walletStorage.removeItem(APP_CONFIG.STORAGE_KEYS.LAST_CONNECTED_WALLET);
     walletConnectionToast.disconnected();
     onConnectionChange?.(false);
   }, [disconnect, onConnectionChange]);

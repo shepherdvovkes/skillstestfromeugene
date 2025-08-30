@@ -178,6 +178,7 @@ export const ConnectionHealthMonitor: React.FC<ConnectionHealthMonitorProps> = (
             variant="outline"
             size="sm"
             loading={isChecking}
+            loadingTimeout={15000} // 15 seconds timeout
           >
             {isChecking ? 'Checking...' : 'Check Health'}
           </Button>

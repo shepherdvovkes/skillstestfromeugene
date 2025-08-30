@@ -38,7 +38,7 @@ export const WalletExample: React.FC<WalletExampleProps> = ({ className }) => {
   const handleResetPreferences = () => {
     saveUserPreferences({
       autoReconnect: true,
-      preferredNetworks: [137, 59144, 56],
+      preferredNetworks: APP_CONFIG.DEFAULT_NETWORK_IDS,
       lastConnectedAt: 0
     });
     preferenceToast.reset();

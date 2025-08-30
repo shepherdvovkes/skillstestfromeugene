@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAccount, useNetwork, useConnect } from 'wagmi';
 import { walletConnectionToast, networkToast, walletToast } from '@/utils/toast';
+import { APP_CONFIG } from '@/config/constants';
+import { walletStorage } from '@/utils/storage';
+import { healthLogger } from '@/utils/logger';
 
 interface ConnectionHealth {
   isHealthy: boolean;
@@ -21,11 +24,11 @@ interface HealthCheckConfig {
 }
 
 const DEFAULT_CONFIG: HealthCheckConfig = {
-  checkInterval: 60000, // 60 seconds (less frequent)
-  maxLatency: 2000, // 2 seconds (more reasonable)
-  maxErrorCount: 3,
-  autoReconnect: true,
-  healthThreshold: 80
+  checkInterval: APP_CONFIG.HEALTH_CHECK.DEFAULT_CHECK_INTERVAL,
+  maxLatency: APP_CONFIG.HEALTH_CHECK.MAX_LATENCY,
+  maxErrorCount: APP_CONFIG.HEALTH_CHECK.MAX_ERROR_COUNT,
+  autoReconnect: APP_CONFIG.HEALTH_CHECK.AUTO_RECONNECT,
+  healthThreshold: APP_CONFIG.HEALTH_CHECK.HEALTH_THRESHOLD
 };
 
 export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => {
@@ -110,19 +113,35 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
     try {
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Wallet health check timeout')), 5000);
+        setTimeout(() => reject(new Error('Wallet health check timeout')), 3000);
       });
 
       const healthCheckPromise = async () => {
         // Check if the wallet is still responsive
-        const provider = await connectors[0]?.getProvider();
-        if (!provider) {
+        const connector = connectors.find(c => c.ready);
+        if (!connector) {
           return false;
         }
 
-        // Try to get the current account
-        const accounts = await provider.request({ method: 'eth_accounts' });
-        return accounts && accounts.length > 0 && accounts[0].toLowerCase() === address.toLowerCase();
+        try {
+          const provider = await connector.getProvider();
+          if (!provider) {
+            return false;
+          }
+
+          // Try to get the current account with a shorter timeout
+          const accounts = await Promise.race([
+            provider.request({ method: 'eth_accounts' }),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Account request timeout')), 2000)
+            )
+          ]);
+          
+          return accounts && accounts.length > 0 && accounts[0].toLowerCase() === address.toLowerCase();
+        } catch (error) {
+          console.warn('Wallet provider check failed:', error);
+          return false;
+        }
       };
 
       return await Promise.race([healthCheckPromise(), timeoutPromise]);
@@ -141,19 +160,35 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
     try {
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Network health check timeout')), 5000);
+        setTimeout(() => reject(new Error('Network health check timeout')), 3000);
       });
 
       const healthCheckPromise = async () => {
         // Check if the network is responsive
-        const provider = await connectors[0]?.getProvider();
-        if (!provider) {
+        const connector = connectors.find(c => c.ready);
+        if (!connector) {
           return false;
         }
 
-        // Get the latest block number
-        const blockNumber = await provider.request({ method: 'eth_blockNumber' });
-        return !!blockNumber;
+        try {
+          const provider = await connector.getProvider();
+          if (!provider) {
+            return false;
+          }
+
+          // Get the latest block number with a shorter timeout
+          const blockNumber = await Promise.race([
+            provider.request({ method: 'eth_blockNumber' }),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Block number request timeout')), 2000)
+            )
+          ]);
+          
+          return !!blockNumber;
+        } catch (error) {
+          console.warn('Network provider check failed:', error);
+          return false;
+        }
       };
 
       return await Promise.race([healthCheckPromise(), timeoutPromise]);
@@ -163,17 +198,74 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
     }
   }, [chain, connectors]);
 
+  // Attempt to reconnect
+  const attemptReconnect = useCallback(async () => {
+    if (!lastConnectedWallet || reconnectAttemptsRef.current >= maxReconnectAttempts) {
+      return;
+    }
+
+    reconnectAttemptsRef.current++;
+    
+    try {
+      const connector = connectors.find(c => c.id === lastConnectedWallet);
+      if (!connector || !connector.ready) {
+        throw new Error('Connector not available');
+      }
+
+      walletToast.info(`Attempting to reconnect... (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+      
+      await connect({ connector });
+      
+      // Reset reconnect attempts on successful reconnection
+      reconnectAttemptsRef.current = 0;
+      walletToast.success('Successfully reconnected');
+      
+    } catch (error) {
+      console.error('Reconnection attempt failed:', error);
+      
+      if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+        walletToast.error('Maximum reconnection attempts reached. Please connect manually.');
+      }
+    }
+  }, [lastConnectedWallet, connectors, connect]);
+
+  // Handle unhealthy connection status
+  const handleUnhealthyStatus = useCallback((issues: string[], status: ConnectionHealth['status']) => {
+    const { autoReconnect, maxErrorCount } = mergedConfig;
+
+    // Show warning for degraded status
+    if (status === 'degraded') {
+      walletToast.warning(`Connection issues detected: ${issues.join(', ')}`);
+    }
+
+    // Show error for unhealthy status
+    if (status === 'unhealthy') {
+      walletToast.error(`Connection is unhealthy: ${issues.join(', ')}`);
+    }
+
+    // Auto-reconnect if enabled and within attempts limit
+    if (autoReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
+      setTimeout(() => {
+        attemptReconnect();
+      }, 5000); // Wait 5 seconds before attempting reconnect
+    }
+  }, [mergedConfig, attemptReconnect]);
+
   // Perform comprehensive health check
   const performHealthCheck = useCallback(async () => {
-    if (isChecking) return;
+    if (isChecking) {
+      console.log('Health check already in progress, skipping...');
+      return;
+    }
 
+    console.log('Starting health check...');
     setIsChecking(true);
     const startTime = Date.now();
 
     try {
       // Add overall timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Health check timeout')), 10000);
+        setTimeout(() => reject(new Error('Health check timeout')), 8000);
       });
 
       const healthCheckPromise = async () => {
@@ -225,11 +317,13 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
 
       // Handle unhealthy status
       if (!isHealthy) {
-        handleUnhealthyStatus(issues);
+        handleUnhealthyStatus(issues, status);
       } else {
         // Reset reconnect attempts on healthy status
         reconnectAttemptsRef.current = 0;
       }
+
+      console.log('Health check completed successfully');
 
     } catch (error) {
       console.error('Health check failed:', error);
@@ -243,69 +337,37 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
         issues: [...prev.issues, 'Health check failed']
       }));
 
-      handleUnhealthyStatus(['Health check failed']);
+      handleUnhealthyStatus(['Health check failed'], 'unhealthy');
     } finally {
+      // Always ensure checking state is reset
+      console.log('Resetting checking state...');
       setIsChecking(false);
     }
-  }, [isChecking, checkNetworkLatency, checkWalletHealth, checkNetworkHealth, mergedConfig]);
-
-  // Handle unhealthy connection status
-  const handleUnhealthyStatus = useCallback((issues: string[]) => {
-    const { autoReconnect, maxErrorCount } = mergedConfig;
-
-    // Show warning for degraded status
-    if (health.status === 'degraded') {
-      walletToast.warning(`Connection issues detected: ${issues.join(', ')}`);
-    }
-
-    // Show error for unhealthy status
-    if (health.status === 'unhealthy') {
-      walletToast.error(`Connection is unhealthy: ${issues.join(', ')}`);
-    }
-
-    // Auto-reconnect if enabled and within attempts limit
-    if (autoReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
-      setTimeout(() => {
-        attemptReconnect();
-      }, 5000); // Wait 5 seconds before attempting reconnect
-    }
-  }, [health.status, mergedConfig]);
-
-  // Attempt to reconnect
-  const attemptReconnect = useCallback(async () => {
-    if (!lastConnectedWallet || reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      return;
-    }
-
-    reconnectAttemptsRef.current++;
-    
-    try {
-      const connector = connectors.find(c => c.id === lastConnectedWallet);
-      if (!connector || !connector.ready) {
-        throw new Error('Connector not available');
-      }
-
-      walletToast.info(`Attempting to reconnect... (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
-      
-      await connect({ connector });
-      
-      // Reset reconnect attempts on successful reconnection
-      reconnectAttemptsRef.current = 0;
-      walletToast.success('Successfully reconnected');
-      
-    } catch (error) {
-      console.error('Reconnection attempt failed:', error);
-      
-      if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-        walletToast.error('Maximum reconnection attempts reached. Please connect manually.');
-      }
-    }
-  }, [lastConnectedWallet, connectors, connect]);
+  }, [isChecking, checkNetworkLatency, checkWalletHealth, checkNetworkHealth, mergedConfig, handleUnhealthyStatus]);
 
   // Manual health check
   const checkHealth = useCallback(() => {
-    performHealthCheck();
-  }, [performHealthCheck]);
+    // Prevent multiple simultaneous checks
+    if (isChecking) {
+      console.log('Health check already in progress, skipping...');
+      return;
+    }
+    
+    console.log('Starting manual health check...');
+    
+    // Add a safety timeout to ensure checking state is reset
+    const safetyTimeout = setTimeout(() => {
+      if (isChecking) {
+        console.warn('Health check safety timeout - resetting checking state');
+        setIsChecking(false);
+      }
+    }, 15000); // 15 second safety timeout
+    
+    performHealthCheck().finally(() => {
+      console.log('Health check completed');
+      clearTimeout(safetyTimeout);
+    });
+  }, [performHealthCheck, isChecking]);
 
   // Manual reconnect
   const reconnect = useCallback(() => {
@@ -319,13 +381,23 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
       clearInterval(intervalRef.current);
     }
 
+    // Don't start monitoring if already checking
+    if (isChecking) {
+      return;
+    }
+
     intervalRef.current = setInterval(() => {
-      performHealthCheck();
+      // Only perform health check if not already checking
+      if (!isChecking) {
+        performHealthCheck();
+      }
     }, mergedConfig.checkInterval);
 
-    // Perform initial health check
-    performHealthCheck();
-  }, [performHealthCheck, mergedConfig.checkInterval]);
+    // Perform initial health check only if not already checking
+    if (!isChecking) {
+      performHealthCheck();
+    }
+  }, [performHealthCheck, mergedConfig.checkInterval, isChecking]);
 
   // Stop health monitoring
   const stopMonitoring = useCallback(() => {
@@ -362,8 +434,46 @@ export const useConnectionHealth = (config: Partial<HealthCheckConfig> = {}) => 
   useEffect(() => {
     return () => {
       stopMonitoring();
+      // Ensure checking state is reset on unmount
+      setIsChecking(false);
     };
   }, [stopMonitoring]);
+
+  // Reset checking state when connection status changes
+  useEffect(() => {
+    if (!isConnected) {
+      setIsChecking(false);
+    }
+  }, [isConnected]);
+
+  // Additional safety: Reset checking state if it gets stuck
+  useEffect(() => {
+    const safetyInterval = setInterval(() => {
+      // If checking has been true for more than 20 seconds, reset it
+      if (isChecking) {
+        const checkStartTime = sessionStorage.getItem('healthCheckStartTime');
+        if (checkStartTime) {
+          const elapsed = Date.now() - parseInt(checkStartTime);
+          if (elapsed > 20000) { // 20 seconds
+            console.warn('Health check stuck for too long, resetting...');
+            setIsChecking(false);
+            sessionStorage.removeItem('healthCheckStartTime');
+          }
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(safetyInterval);
+  }, [isChecking]);
+
+  // Track when checking starts
+  useEffect(() => {
+    if (isChecking) {
+      sessionStorage.setItem('healthCheckStartTime', Date.now().toString());
+    } else {
+      sessionStorage.removeItem('healthCheckStartTime');
+    }
+  }, [isChecking]);
 
   // Get health status summary
   const getHealthSummary = useCallback(() => {

@@ -34,19 +34,16 @@ export const useHealthStatus = (): HealthStatus => {
       const issues: string[] = [];
       let isHealthy = true;
 
-      // Check connection status
       if (!isConnected) {
         issues.push('Wallet disconnected');
         isHealthy = false;
       }
 
-      // Check network status
       if (currentNetwork && !networkService.isNetworkSupported(currentNetwork.id)) {
         issues.push(`Unsupported network: ${currentNetwork.name}`);
         isHealthy = false;
       }
 
-      // Determine status
       let status: HealthStatus['status'] = 'healthy';
       if (!isHealthy) {
         status = issues.length >= 2 ? 'unhealthy' : 'degraded';
@@ -64,11 +61,9 @@ export const useHealthStatus = (): HealthStatus => {
       }));
     };
 
-    // Update health immediately
     updateHealth();
 
-    // Set up interval for periodic health checks
-    const interval = setInterval(updateHealth, 30000); // Check every 30 seconds
+    const interval = setInterval(updateHealth, 30000);
 
     return () => clearInterval(interval);
   }, [walletService, networkService]);

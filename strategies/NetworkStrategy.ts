@@ -126,7 +126,6 @@ export class LineaStrategy implements NetworkStrategy {
   }
 
   async getGasEstimate(): Promise<{ fast: number; standard: number; slow: number }> {
-    // Linea uses EIP-1559 gas estimation
     return {
       fast: 2,
       standard: 1.5,
@@ -179,7 +178,6 @@ export class BSCStrategy implements NetworkStrategy {
   }
 
   async getGasEstimate(): Promise<{ fast: number; standard: number; slow: number }> {
-    // BSC uses fixed gas price
     return {
       fast: 5,
       standard: 3,
@@ -250,12 +248,10 @@ export class EthereumStrategy implements NetworkStrategy {
   }
 }
 
-// Network Registry for managing strategies
 export class NetworkRegistry {
   private strategies: Map<number, NetworkStrategy> = new Map();
 
   constructor() {
-    // Register default strategies
     this.register(new PolygonStrategy());
     this.register(new LineaStrategy());
     this.register(new BSCStrategy());
@@ -293,5 +289,4 @@ export class NetworkRegistry {
   }
 }
 
-// Export default registry instance
 export const networkRegistry = new NetworkRegistry();

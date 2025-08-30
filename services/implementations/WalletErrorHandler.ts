@@ -8,10 +8,8 @@ export class WalletErrorHandler implements IErrorHandler {
     const categorization = this.categorizeError(error);
     const recoveryAction = this.getRecoveryAction(error);
     
-    // Log the error
     this.logError(error, context);
     
-    // Handle based on error type
     switch (categorization.type) {
       case 'connection':
         return this.handleConnectionError(error, context);
@@ -27,7 +25,6 @@ export class WalletErrorHandler implements IErrorHandler {
   }
 
   canHandle(error: any): boolean {
-    // Can handle all wallet-related errors
     return true;
   }
 
@@ -36,7 +33,6 @@ export class WalletErrorHandler implements IErrorHandler {
     severity: 'low' | 'medium' | 'high' | 'critical';
     userFriendly: boolean;
   } {
-    // MetaMask specific errors
     if (error?.code === APP_CONFIG.ERROR_CODES.METAMASK_PENDING_REQUEST) {
       return {
         type: 'wallet',
@@ -45,7 +41,6 @@ export class WalletErrorHandler implements IErrorHandler {
       };
     }
 
-    // Network errors
     if (error?.code === -32603 || error?.message?.includes('network')) {
       return {
         type: 'network',
@@ -54,7 +49,6 @@ export class WalletErrorHandler implements IErrorHandler {
       };
     }
 
-    // Connection errors
     if (error?.code === -32002 || error?.message?.includes('connection')) {
       return {
         type: 'connection',
@@ -63,7 +57,6 @@ export class WalletErrorHandler implements IErrorHandler {
       };
     }
 
-    // Storage errors
     if (error?.name === 'QuotaExceededError' || error?.message?.includes('storage')) {
       return {
         type: 'storage',
@@ -72,7 +65,6 @@ export class WalletErrorHandler implements IErrorHandler {
       };
     }
 
-    // Critical errors
     if (error?.code === -32601 || error?.code === -32700) {
       return {
         type: 'wallet',
@@ -81,7 +73,6 @@ export class WalletErrorHandler implements IErrorHandler {
       };
     }
 
-    // Default to unknown
     return {
       type: 'unknown',
       severity: 'medium',
@@ -168,7 +159,6 @@ export class WalletErrorHandler implements IErrorHandler {
   }
 
   private handleWalletError(error: any, context: ErrorContext): ErrorResult {
-    // Don't show toast for specific MetaMask errors to avoid spam
     if (error?.code === APP_CONFIG.ERROR_CODES.METAMASK_PENDING_REQUEST) {
       walletLogger.warn(`MetaMask is already processing a request. Please wait.`);
       return {
@@ -232,7 +222,6 @@ export class WalletErrorHandler implements IErrorHandler {
       return messages.connection.default;
     }
 
-    // Try to get specific wallet message, fallback to default
     return typeMessages.default || 'An error occurred. Please try again.';
   }
 }

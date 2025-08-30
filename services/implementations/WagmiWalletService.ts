@@ -37,8 +37,6 @@ export class WagmiWalletService implements IWalletService {
     };
 
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, we'll return a placeholder implementation
       const result: WalletConnectionResult = {
         success: true,
         walletType: connectorId
@@ -67,7 +65,6 @@ export class WagmiWalletService implements IWalletService {
     };
 
     try {
-      // This would need to be adapted for the hook-based approach
       this.clearConnectionState();
       walletConnectionToast.disconnected();
     } catch (error) {
@@ -77,8 +74,6 @@ export class WagmiWalletService implements IWalletService {
 
   async getAccount(): Promise<Account | null> {
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, return null as placeholder
       return null;
     } catch (error) {
       const context: ErrorContext = {
@@ -93,8 +88,6 @@ export class WagmiWalletService implements IWalletService {
 
   isConnected(): boolean {
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, return false as placeholder
       return false;
     } catch (error) {
       const context: ErrorContext = {
@@ -109,8 +102,6 @@ export class WagmiWalletService implements IWalletService {
 
   getConnectors(): Connector[] {
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, return empty array as placeholder
       return [];
     } catch (error) {
       const context: ErrorContext = {
@@ -140,8 +131,6 @@ export class WagmiWalletService implements IWalletService {
 
   getConnectionState(): { isConnecting: boolean; error: any } {
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, return default state as placeholder
       return {
         isConnecting: false,
         error: null

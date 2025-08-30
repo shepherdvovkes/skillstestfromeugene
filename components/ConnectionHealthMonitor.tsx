@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useConnectionHealth } from '@/hooks/useConnectionHealth';
-import { useUser } from '@/hooks/user';
+import { useHealthStatus } from '@/hooks/useHealthStatus';
+import { useWalletConnection } from '@/hooks/useWalletConnection';
 import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -120,17 +120,8 @@ export const ConnectionHealthMonitor: React.FC<ConnectionHealthMonitorProps> = (
   className,
   showAdvanced = false
 }) => {
-  const { isConnected } = useUser();
-  const {
-    health,
-    isChecking,
-    checkHealth,
-    reconnect,
-    getHealthSummary
-  } = useConnectionHealth({
-    checkInterval: 30000, // 30 seconds
-    autoReconnect: true
-  });
+  const { isConnected } = useWalletConnection();
+  const health = useHealthStatus();
 
   const [showDetails, setShowDetails] = useState(showAdvanced);
 
@@ -148,51 +139,24 @@ export const ConnectionHealthMonitor: React.FC<ConnectionHealthMonitorProps> = (
     );
   }
 
-  const summary = getHealthSummary();
-
   return (
     <ErrorBoundary>
       <div className={`p-4 border border-gray-200 rounded-lg ${className}`}>
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-medium text-gray-900">Connection Health</h3>
           <HealthStatusIndicator status={health.status} />
         </div>
 
-        {/* Health Summary */}
         <div className="mb-4">
           <HealthMetrics health={health} />
         </div>
 
-        {/* Issues */}
         <div className="mb-4">
           <label className="block text-xs text-gray-500 mb-2">Current Issues</label>
           <IssuesList issues={health.issues} />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2 mb-4">
-          <Button
-            onClick={checkHealth}
-            disabled={isChecking}
-            variant="outline"
-            size="sm"
-            loading={isChecking}
-            loadingTimeout={15000} // 15 seconds timeout
-          >
-            {isChecking ? 'Checking...' : 'Check Health'}
-          </Button>
-          
-          {summary.canReconnect && (
-            <Button
-              onClick={reconnect}
-              variant="outline"
-              size="sm"
-            >
-              Reconnect
-            </Button>
-          )}
-          
           <Button
             onClick={() => setShowDetails(!showDetails)}
             variant="ghost"
@@ -202,21 +166,11 @@ export const ConnectionHealthMonitor: React.FC<ConnectionHealthMonitorProps> = (
           </Button>
         </div>
 
-        {/* Advanced Details */}
         {showDetails && (
           <div className="pt-4 border-t border-gray-200">
             <h4 className="text-sm font-medium text-gray-900 mb-3">Advanced Details</h4>
             
             <div className="space-y-3 text-sm">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Health Summary</label>
-                <div className="bg-gray-50 p-3 rounded">
-                  <pre className="text-xs overflow-auto">
-                    {JSON.stringify(summary, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Raw Health Data</label>
                 <div className="bg-gray-50 p-3 rounded">
@@ -242,7 +196,6 @@ export const ConnectionHealthMonitor: React.FC<ConnectionHealthMonitorProps> = (
           </div>
         )}
 
-        {/* Status Messages */}
         {health.status === 'degraded' && (
           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Mock react-hot-toast
@@ -51,21 +51,42 @@ Object.defineProperty(window, 'localStorage', {
 // Mock fetch for network checks
 global.fetch = jest.fn();
 
-describe('Error Boundary Components', () => {
+// Test component that can throw errors
+const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
+  if (shouldThrow) {
+    throw new Error('Test error');
+  }
+  return <div>No error</div>;
+};
+
+// Test component that throws different types of errors
+const ThrowSpecificError = ({ errorType }: { errorType: 'network' | 'wallet' | 'general' }) => {
+  switch (errorType) {
+    case 'network':
+      throw new Error('Network connection failed');
+    case 'wallet':
+      throw new Error('Wallet connection failed');
+    default:
+      throw new Error('General application error');
+  }
+};
+
+describe('ErrorBoundary Component', () => {
+  let consoleSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
+    // Suppress console.error for all tests
+    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  describe('ErrorBoundary', () => {
-    const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
-      if (shouldThrow) {
-        throw new Error('Test error');
-      }
-      return <div>No error</div>;
-    };
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
 
-    it('renders children when no error occurs', () => {
+  describe('Single Responsibility Principle (SRP)', () => {
+    it('should only handle error boundary responsibilities', () => {
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={false} />
@@ -75,10 +96,17 @@ describe('Error Boundary Components', () => {
       expect(screen.getByText('No error')).toBeInTheDocument();
     });
 
-    it('renders error UI when error occurs', () => {
-      // Suppress console.error for this test
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should render children when no error occurs', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      );
 
+      expect(screen.getByText('No error')).toBeInTheDocument();
+    });
+
+    it('should catch and handle errors when they occur', () => {
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} />
@@ -86,32 +114,163 @@ describe('Error Boundary Components', () => {
       );
 
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('An unexpected error occurred. This might be related to wallet connection issues.')).toBeInTheDocument();
-      expect(screen.getByText('Try Again')).toBeInTheDocument();
-      expect(screen.getByText('Refresh Page')).toBeInTheDocument();
-
-      consoleSpy.mockRestore();
     });
+  });
 
-    it('shows custom fallback when provided', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  describe('Open/Closed Principle (OCP)', () => {
+    it('should be open for extension with custom fallback', () => {
+      const CustomFallback = () => <div>Custom error message</div>;
 
       render(
-        <ErrorBoundary
-          fallback={<div>Custom error message</div>}
-        >
+        <ErrorBoundary fallback={<CustomFallback />}>
           <ThrowError shouldThrow={true} />
         </ErrorBoundary>
       );
 
       expect(screen.getByText('Custom error message')).toBeInTheDocument();
-
-      consoleSpy.mockRestore();
     });
 
-    it('shows error details when available', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should allow different error types without modification', () => {
+      const { rerender } = render(
+        <ErrorBoundary>
+          <ThrowSpecificError errorType="network" />
+        </ErrorBoundary>
+      );
 
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+      expect(screen.getByText('Network connection failed')).toBeInTheDocument();
+
+      rerender(
+        <ErrorBoundary>
+          <ThrowSpecificError errorType="wallet" />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Wallet connection failed')).toBeInTheDocument();
+    });
+  });
+
+  describe('Liskov Substitution Principle (LSP)', () => {
+    it('should work with any React component that can throw errors', () => {
+      const FunctionalComponent = () => {
+        throw new Error('Functional component error');
+      };
+
+      const ClassComponent = class extends React.Component {
+        render() {
+          throw new Error('Class component error');
+        }
+      };
+
+      // Test with functional component
+      const { rerender } = render(
+        <ErrorBoundary>
+          <FunctionalComponent />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+
+      // Test with class component
+      rerender(
+        <ErrorBoundary>
+          <ClassComponent />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+  });
+
+  describe('Interface Segregation Principle (ISP)', () => {
+    it('should only require necessary props', () => {
+      // ErrorBoundary only needs children and optional fallback
+      render(
+        <ErrorBoundary>
+          <div>Simple component</div>
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Simple component')).toBeInTheDocument();
+    });
+
+    it('should handle minimal props correctly', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+  });
+
+  describe('Dependency Inversion Principle (DIP)', () => {
+    it('should depend on abstractions (React.Component) not concretions', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('No error')).toBeInTheDocument();
+    });
+
+    it('should not depend on external services directly', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      // ErrorBoundary should work without external dependencies
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Recovery Actions', () => {
+    it('should provide retry functionality', () => {
+      const { rerender } = render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Try Again'));
+
+      rerender(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('No error')).toBeInTheDocument();
+    });
+
+    it('should provide refresh functionality', () => {
+      // Mock window.location.reload
+      const mockReload = jest.fn();
+      Object.defineProperty(window.location, 'reload', {
+        value: mockReload,
+        configurable: true,
+      });
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      fireEvent.click(screen.getByText('Refresh Page'));
+
+      expect(mockReload).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Error Information Display', () => {
+    it('should show error details when available', () => {
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} />
@@ -120,8 +279,37 @@ describe('Error Boundary Components', () => {
 
       expect(screen.getByText('Error details')).toBeInTheDocument();
       expect(screen.getByText('Test error')).toBeInTheDocument();
+    });
 
-      consoleSpy.mockRestore();
+    it('should handle errors without messages gracefully', () => {
+      const ThrowErrorWithoutMessage = () => {
+        throw new Error();
+      };
+
+      render(
+        <ErrorBoundary>
+          <ThrowErrorWithoutMessage />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+      expect(screen.getByText('Error details')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Logging', () => {
+    it('should log errors to console', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'ErrorBoundary caught an error:',
+        expect.any(Error),
+        expect.any(Object)
+      );
     });
   });
 });

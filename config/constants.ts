@@ -49,9 +49,11 @@ export const APP_CONFIG = {
       ERROR: '#dc2626',
       SUCCESS: '#059669',
       WARNING: '#d97706',
+      INFO: '#3B82F6',
       BORDER_ERROR: '#ef4444',
       BORDER_SUCCESS: '#10b981',
-      BORDER_WARNING: '#f59e0b'
+      BORDER_WARNING: '#f59e0b',
+      BORDER_INFO: '#1D4ED8'
     }
   },
   

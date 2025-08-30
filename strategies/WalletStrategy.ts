@@ -83,11 +83,11 @@ export class WalletConnectStrategy implements WalletStrategy {
   }
 
   isInstalled(): boolean {
-    return true; // WalletConnect works with any wallet
+    return true;
   }
 
   getProvider(): any {
-    return null; // Provider is created dynamically
+    return null;
   }
 }
 
@@ -165,12 +165,10 @@ export class BitgetWalletStrategy implements WalletStrategy {
   }
 }
 
-// Wallet Registry for managing strategies
 export class WalletRegistry {
   private strategies: Map<string, WalletStrategy> = new Map();
 
   constructor() {
-    // Register default strategies
     this.register(new MetaMaskStrategy());
     this.register(new WalletConnectStrategy());
     this.register(new TokenPocketStrategy());
@@ -198,5 +196,4 @@ export class WalletRegistry {
   }
 }
 
-// Export default registry instance
 export const walletRegistry = new WalletRegistry();

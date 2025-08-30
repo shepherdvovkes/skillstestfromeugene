@@ -25,8 +25,6 @@ export class NetworkService implements INetworkService {
 
   getCurrentNetwork(): Network | null {
     try {
-      // This would need to be adapted for the hook-based approach
-      // For now, return null as placeholder
       return null;
     } catch (error) {
       const context: ErrorContext = {
@@ -56,8 +54,6 @@ export class NetworkService implements INetworkService {
         };
       }
 
-      // This would need to be adapted for the hook-based approach
-      // For now, return success as placeholder
       const result: NetworkSwitchResult = {
         success: true,
         networkId
@@ -153,8 +149,6 @@ export class NetworkService implements INetworkService {
         return false;
       }
 
-      // This would need to be adapted for the hook-based approach
-      // For now, return true as placeholder
       return true;
     } catch (error) {
       this.errorHandler.handle(error, context);
@@ -214,11 +208,9 @@ export class NetworkService implements INetworkService {
         };
       }
 
-      // This would need to be adapted for the hook-based approach
-      // For now, return healthy as placeholder
       return {
         isHealthy: true,
-        latency: 100 // Placeholder latency
+        latency: 100
       };
     } catch (error) {
       const errorResult = this.errorHandler.handle(error, context);

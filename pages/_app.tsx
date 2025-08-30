@@ -3,59 +3,42 @@ import { WagmiConfig, createConfig, configureChains } from 'wagmi';
 import { polygon, linea, bsc } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask';
-// import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
-import { Toaster } from 'react-hot-toast';
-import '../styles/globals.css';
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
+import { ServiceProvider } from '@/contexts/ServiceContext';
+import { serviceFactory } from '@/services/ServiceFactory';
+import '@/styles/globals.css';
 
-// Configure chains and providers
+// Configure chains & providers
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [polygon, linea, bsc],
   [publicProvider()]
 );
 
-// Set up wagmi config with improved error handling
+// Set up wagmi config
 const config = createConfig({
-  autoConnect: false, // Disable autoConnect to prevent race conditions
-  publicClient,
-  webSocketPublicClient,
+  autoConnect: true,
   connectors: [
-    new MetaMaskConnector({ 
+    new MetaMaskConnector({ chains }),
+    new WalletConnectConnector({
       chains,
       options: {
-        shimDisconnect: true, // Better disconnect handling
-      }
+        projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'your-project-id',
+      },
     }),
-    // Temporarily disabled WalletConnect due to invalid project ID
-    // new WalletConnectConnector({
-    //   chains,
-    //   options: {
-    //     projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id',
-    //     showQrModal: true,
-    //     metadata: {
-    //       name: 'Blockchain Wallet Demo',
-    //       description: 'Enhanced blockchain wallet connection demo',
-    //       url: typeof window !== 'undefined' ? window.location.origin : '',
-    //       icons: ['https://avatars.githubusercontent.com/u/37784886']
-    //     }
-    //   },
-    // }),
   ],
+  publicClient,
+  webSocketPublicClient,
 });
 
 export default function App({ Component, pageProps }: AppProps) {
+  // Create services using the factory
+  const services = serviceFactory.createAllServices();
+
   return (
     <WagmiConfig config={config}>
-      <Component {...pageProps} />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-        }}
-      />
+      <ServiceProvider services={services}>
+        <Component {...pageProps} />
+      </ServiceProvider>
     </WagmiConfig>
   );
 }

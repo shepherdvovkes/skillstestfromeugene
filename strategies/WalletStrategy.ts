@@ -48,7 +48,29 @@ export class MetaMaskStrategy implements WalletStrategy {
   }
 
   getProvider(): any {
-    return typeof window !== 'undefined' ? (window as any).ethereum : null;
+    try {
+      if (typeof window === 'undefined') return null;
+      
+      const provider = (window as any).ethereum;
+      
+      // Validate provider to prevent malicious injection
+      if (!provider || typeof provider !== 'object') return null;
+      
+      // Check for required methods
+      if (typeof provider.request !== 'function' || 
+          typeof provider.on !== 'function' || 
+          typeof provider.removeListener !== 'function') {
+        return null;
+      }
+      
+      // Validate provider properties
+      if (typeof provider.isMetaMask !== 'boolean') return null;
+      
+      return provider;
+    } catch (error) {
+      console.warn('Failed to get MetaMask provider:', error);
+      return null;
+    }
   }
 }
 

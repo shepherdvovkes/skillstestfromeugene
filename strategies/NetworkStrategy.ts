@@ -1,3 +1,6 @@
+import { APP_CONFIG } from '@/config/constants';
+import { SecurityUtils } from '@/utils/security';
+
 export interface Currency {
   name: string;
   symbol: string;
@@ -27,18 +30,51 @@ export class PolygonStrategy implements NetworkStrategy {
 
   async validateConnection(): Promise<boolean> {
     try {
+      // Validate RPC URL to prevent open redirect attacks
+      if (!SecurityUtils.validateURL(this.rpcUrl)) {
+        console.warn(`Invalid RPC URL detected: ${this.rpcUrl}`);
+        return false;
+      }
+
+      const payload = {
+        jsonrpc: '2.0',
+        method: 'eth_blockNumber',
+        params: [],
+        id: SecurityUtils.generateSecureToken(8)
+      };
+
+      // Validate RPC payload
+      if (!SecurityUtils.validateRPCRequest(payload)) {
+        console.warn('Invalid RPC payload detected');
+        return false;
+      }
+
       const response = await fetch(this.rpcUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_blockNumber',
-          params: [],
-          id: 1
-        })
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': 'WalletConnectionApp/1.0'
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(APP_CONFIG.TIMEOUTS.NETWORK_HEALTH_CHECK)
       });
-      return response.ok;
-    } catch {
+
+      if (!response.ok) {
+        console.warn(`RPC response not ok: ${response.status} ${response.statusText}`);
+        return false;
+      }
+
+      const data = await response.json();
+      
+      // Validate response structure
+      if (!data || typeof data !== 'object' || !data.result) {
+        console.warn('Invalid RPC response structure');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn(`RPC validation failed for ${this.name}:`, error);
       return false;
     }
   }
@@ -65,14 +101,36 @@ export class PolygonStrategy implements NetworkStrategy {
 
   async getGasEstimate(): Promise<{ fast: number; standard: number; slow: number }> {
     try {
-      const response = await fetch('https://gasstation.polygon.technology/v2');
+      const gasUrl = 'https://gasstation.polygon.technology/v2';
+      
+      // Validate gas station URL
+      if (!SecurityUtils.validateURL(gasUrl)) {
+        throw new Error('Invalid gas station URL');
+      }
+
+      const response = await fetch(gasUrl, {
+        signal: AbortSignal.timeout(APP_CONFIG.TIMEOUTS.NETWORK_HEALTH_CHECK)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gas station response not ok: ${response.status}`);
+      }
+
       const data = await response.json();
+      
+      // Validate and sanitize response data
+      const sanitizedData = SecurityUtils.sanitizeJSON(data);
+      if (!sanitizedData || !sanitizedData.fast || !sanitizedData.standard || !sanitizedData.safeLow) {
+        throw new Error('Invalid gas station data structure');
+      }
+
       return {
-        fast: data.fast.maxFee,
-        standard: data.standard.maxFee,
-        slow: data.safeLow.maxFee
+        fast: Math.max(1, parseInt(sanitizedData.fast.maxFee) || 30),
+        standard: Math.max(1, parseInt(sanitizedData.standard.maxFee) || 20),
+        slow: Math.max(1, parseInt(sanitizedData.safeLow.maxFee) || 10)
       };
-    } catch {
+    } catch (error) {
+      console.warn('Gas estimation failed, using fallback values:', error);
       return {
         fast: 30,
         standard: 20,

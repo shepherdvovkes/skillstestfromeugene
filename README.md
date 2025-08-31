@@ -17,7 +17,6 @@ This application provides a complete solution for integrating blockchain wallet 
 - Secure HTTPS development and production environments
 
 ### Architecture & Design
-- SOLID principles implementation with clean architecture
 - TypeScript for full type safety and developer experience
 - Responsive, accessible UI built with Tailwind CSS
 - Comprehensive test suite with Jest and React Testing Library
@@ -153,16 +152,6 @@ blockchain-wallet-connection-demo/
 ```
 
 ## Architecture
-
-### SOLID Principles Implementation
-
-The project follows SOLID principles for maintainable and scalable code:
-
-- **Single Responsibility Principle**: Each component and service has a single, well-defined purpose
-- **Open/Closed Principle**: Easy extension with new wallet providers and networks
-- **Liskov Substitution Principle**: Services can be swapped without breaking functionality
-- **Interface Segregation Principle**: Focused interfaces for specific use cases
-- **Dependency Inversion Principle**: High-level modules don't depend on low-level modules
 
 ### Service Layer Architecture
 

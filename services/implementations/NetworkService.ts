@@ -1,5 +1,5 @@
 import { useNetwork, useSwitchNetwork } from 'wagmi';
-import { polygon, linea, bsc } from 'wagmi/chains';
+import { polygon, linea } from 'wagmi/chains';
 import { INetworkService, Network, NetworkSwitchResult } from '../interfaces/INetworkService';
 import { IErrorHandler, ErrorContext } from '../interfaces/IErrorHandler';
 import { APP_CONFIG } from '@/config/constants';
@@ -76,6 +76,17 @@ export class NetworkService implements INetworkService {
   getSupportedNetworks(): Network[] {
     try {
       return [
+        {
+          id: APP_CONFIG.NETWORKS.ETHEREUM.id,
+          name: APP_CONFIG.NETWORKS.ETHEREUM.name,
+          rpcUrl: APP_CONFIG.NETWORKS.ETHEREUM.rpcUrl,
+          blockExplorer: 'https://etherscan.io',
+          nativeCurrency: {
+            name: 'ETH',
+            symbol: 'ETH',
+            decimals: 18
+          }
+        },
         {
           id: APP_CONFIG.NETWORKS.POLYGON.id,
           name: APP_CONFIG.NETWORKS.POLYGON.name,

@@ -2,6 +2,11 @@
 export const APP_CONFIG = {
   // Network Configuration
   NETWORKS: {
+    ETHEREUM: {
+      id: 1,
+      name: 'Ethereum',
+      rpcUrl: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL || 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'
+    },
     POLYGON: {
       id: 137,
       name: 'Polygon',
@@ -20,7 +25,7 @@ export const APP_CONFIG = {
   },
   
   // Default Network IDs (for backward compatibility)
-  DEFAULT_NETWORK_IDS: [137, 59144, 56] as number[],
+  DEFAULT_NETWORK_IDS: [1, 137, 59144, 56] as number[],
   
   // Timeout Configuration
   TIMEOUTS: {

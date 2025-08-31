@@ -2,6 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNetworkManagement } from '@/hooks/useNetworkManagement';
 import { useAccount, useSwitchNetwork, useNetwork } from 'wagmi';
+import { APP_CONFIG } from '@/config/constants';
+
+// Function to add chain to MetaMask
+const addChainToMetaMask = async (networkId: number) => {
+  const network = Object.values(APP_CONFIG.NETWORKS).find(n => n.id === networkId);
+  if (!network) {
+    throw new Error(`Network ${networkId} not found in configuration`);
+  }
+
+  const chainParams = {
+    chainId: `0x${networkId.toString(16)}`, // Convert to hex
+    chainName: network.name,
+    nativeCurrency: {
+      name: network.name === 'BSC' ? 'BNB' : network.name === 'Polygon' ? 'MATIC' : 'ETH',
+      symbol: network.name === 'BSC' ? 'BNB' : network.name === 'Polygon' ? 'MATIC' : 'ETH',
+      decimals: 18,
+    },
+    rpcUrls: [network.rpcUrl],
+    blockExplorerUrls: [
+      network.name === 'BSC' ? 'https://bscscan.com' :
+      network.name === 'Polygon' ? 'https://polygonscan.com' :
+      network.name === 'Linea' ? 'https://lineascan.build' :
+      'https://etherscan.io'
+    ],
+  };
+
+  try {
+    // Check if MetaMask is available
+    if (typeof window !== 'undefined' && window.ethereum) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [chainParams],
+      });
+      return true;
+    } else {
+      throw new Error('MetaMask not available');
+    }
+  } catch (error) {
+    console.error('Failed to add chain to MetaMask:', error);
+    throw error;
+  }
+};
 
 export const NetworkSwitcher: React.FC = () => {
   // Use the complex service architecture for business logic
@@ -42,9 +84,31 @@ export const NetworkSwitcher: React.FC = () => {
         throw new Error(`Network ${networkId} validation failed`);
       }
 
-      // Use wagmi network switch for immediate UI update
+      // Try to switch network using wagmi first
       if (wagmiSwitchNetwork) {
-        await wagmiSwitchNetwork(networkId);
+        try {
+          await wagmiSwitchNetwork(networkId);
+        } catch (switchError: any) {
+          // If the error indicates an unrecognized chain, try to add it to MetaMask
+          if (switchError.message?.includes('Unrecognized chain ID') || 
+              switchError.message?.includes('wallet_addEthereumChain')) {
+            console.log(`Chain ${networkId} not recognized, adding to MetaMask...`);
+            
+            try {
+              // Add the chain to MetaMask
+              await addChainToMetaMask(networkId);
+              
+              // Try switching again after adding the chain
+              await wagmiSwitchNetwork(networkId);
+            } catch (addChainError) {
+              console.error('Failed to add chain to MetaMask:', addChainError);
+              throw new Error(`Please add ${APP_CONFIG.NETWORKS[networkId as keyof typeof APP_CONFIG.NETWORKS]?.name || `Network ${networkId}`} to MetaMask manually and try again.`);
+            }
+          } else {
+            // Re-throw other errors
+            throw switchError;
+          }
+        }
       }
       
       // Also trigger the service layer switchNetwork for business logic

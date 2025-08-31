@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { WalletStrategy } from '@/strategies/WalletStrategy';
 import { walletConnectionToast } from '@/utils/toast';
@@ -31,7 +31,15 @@ export const WalletConnectionUI: React.FC<WalletConnectionUIProps> = ({
 }) => {
   const [retryCount, setRetryCount] = useState<Record<string, number>>({});
   const [isRetrying, setIsRetrying] = useState(false);
+  const [retryingWallet, setRetryingWallet] = useState<string | null>(null);
   const MAX_RETRIES = 3;
+
+  // Reset retry count when wallet type changes
+  useEffect(() => {
+    if (walletType && !error) {
+      setRetryCount(prev => ({ ...prev, [walletType]: 0 }));
+    }
+  }, [walletType, error]);
 
   // Enhanced error handling for each wallet type with retry mechanism
   const handleWalletError = (error: any, walletType: string) => {
@@ -62,8 +70,21 @@ export const WalletConnectionUI: React.FC<WalletConnectionUIProps> = ({
       // Reset retry count on successful connection
       setRetryCount(prev => ({ ...prev, [walletType]: 0 }));
     } catch (error) {
+      const currentRetries = retryCount[walletType] || 0;
+      setRetryCount(prev => ({ ...prev, [walletType]: currentRetries + 1 }));
       handleWalletError(error, walletType);
     }
+  };
+
+  const handleRetryButtonClick = (walletType: string) => {
+    const currentRetries = retryCount[walletType] || 0;
+    
+    if (currentRetries >= MAX_RETRIES) {
+      walletConnectionToast.maxRetriesExceeded();
+      return;
+    }
+    
+    handleRetry(walletType);
   };
 
   const handleRetry = async (walletType: string) => {
@@ -75,21 +96,30 @@ export const WalletConnectionUI: React.FC<WalletConnectionUIProps> = ({
     }
 
     setIsRetrying(true);
+    setRetryingWallet(walletType);
     try {
-      // Increment retry count
-      setRetryCount(prev => ({ ...prev, [walletType]: currentRetries + 1 }));
+      // Increment retry count first
+      const newRetryCount = currentRetries + 1;
+      setRetryCount(prev => ({ ...prev, [walletType]: newRetryCount }));
       
       // Show retry attempt toast
-      walletConnectionToast.retryAttempt(currentRetries + 1, MAX_RETRIES);
+      walletConnectionToast.retryAttempt(newRetryCount, MAX_RETRIES);
+      
+      // If we've reached max retries after this increment, show the toast
+      if (newRetryCount >= MAX_RETRIES) {
+        walletConnectionToast.maxRetriesExceeded();
+      }
       
       await onConnect(walletType);
       
       // Reset retry count on successful connection
       setRetryCount(prev => ({ ...prev, [walletType]: 0 }));
     } catch (error) {
+      // Don't increment retry count again here since we already did it above
       handleWalletError(error, walletType);
     } finally {
       setIsRetrying(false);
+      setRetryingWallet(null);
     }
   };
 
@@ -135,7 +165,7 @@ export const WalletConnectionUI: React.FC<WalletConnectionUIProps> = ({
                 </span>
               )}
               <Button
-                onClick={() => walletType ? handleRetry(walletType) : onRetry()}
+                onClick={() => walletType ? handleRetryButtonClick(walletType) : onRetry()}
                 variant="ghost"
                 size="sm"
                 disabled={isRetrying || !!(walletType && (retryCount[walletType] || 0) >= MAX_RETRIES)}
@@ -151,17 +181,18 @@ export const WalletConnectionUI: React.FC<WalletConnectionUIProps> = ({
       {availableWallets.map((wallet) => {
         const walletRetryCount = retryCount[wallet.id] || 0;
         const isMaxRetriesReached = walletRetryCount >= MAX_RETRIES;
+        const isThisWalletRetrying = retryingWallet === wallet.id;
         
         return (
           <div key={wallet.id} className="space-y-2">
             <Button
               onClick={() => handleConnect(wallet.id)}
-              disabled={isConnecting || isMaxRetriesReached}
-              className="w-full"
+              disabled={isConnecting || isMaxRetriesReached || isThisWalletRetrying}
+              className={`w-full ${isMaxRetriesReached ? 'bg-red-600 text-white hover:bg-red-700' : ''}`}
               variant={isMaxRetriesReached ? "destructive" : "default"}
               aria-label={`Connect to ${wallet.name} wallet`}
             >
-              {isConnecting ? 'Connecting...' : `Connect ${wallet.name}`}
+              {isConnecting || isThisWalletRetrying ? 'Connecting...' : `Connect ${wallet.name}`}
             </Button>
             
             {walletRetryCount > 0 && (

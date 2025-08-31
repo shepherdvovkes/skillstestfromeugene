@@ -315,10 +315,10 @@ export class NetworkRegistry {
   private strategies: Map<number, NetworkStrategy> = new Map();
 
   constructor() {
+    this.register(new EthereumStrategy());
     this.register(new PolygonStrategy());
     this.register(new LineaStrategy());
     this.register(new BSCStrategy());
-    this.register(new EthereumStrategy());
   }
 
   register(strategy: NetworkStrategy): void {

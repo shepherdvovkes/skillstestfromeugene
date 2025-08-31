@@ -1,17 +1,73 @@
 import React from 'react';
 import type { AppProps } from 'next/app';
 import { WagmiConfig, createConfig, configureChains } from 'wagmi';
-import { polygon, linea, bsc, mainnet } from 'wagmi/chains';
+import { polygon, linea, mainnet } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask';
 import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
 import { ServiceProvider } from '@/contexts/ServiceContext';
 import { serviceFactory } from '@/services/ServiceFactory';
+import { APP_CONFIG } from '@/config/constants';
 import '@/styles/globals.css';
+
+// Custom BSC chain configuration to match our RPC URL
+const bsc = {
+  id: 56,
+  name: 'BNB Smart Chain',
+  network: 'bsc',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'BNB',
+    symbol: 'BNB',
+  },
+  rpcUrls: {
+    default: {
+      http: [APP_CONFIG.NETWORKS.BSC.rpcUrl],
+    },
+    public: {
+      http: [APP_CONFIG.NETWORKS.BSC.rpcUrl],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'BscScan', url: 'https://bscscan.com' },
+  },
+  contracts: {
+    multicall3: {
+      address: '0xca11bde05977b3631167028862be2a173976ca11',
+      blockCreated: 15921452,
+    },
+  },
+} as const;
+
+// Custom Polygon chain configuration
+const customPolygon = {
+  ...polygon,
+  rpcUrls: {
+    default: {
+      http: [APP_CONFIG.NETWORKS.POLYGON.rpcUrl],
+    },
+    public: {
+      http: [APP_CONFIG.NETWORKS.POLYGON.rpcUrl],
+    },
+  },
+} as const;
+
+// Custom Linea chain configuration
+const customLinea = {
+  ...linea,
+  rpcUrls: {
+    default: {
+      http: [APP_CONFIG.NETWORKS.LINEA.rpcUrl],
+    },
+    public: {
+      http: [APP_CONFIG.NETWORKS.LINEA.rpcUrl],
+    },
+  },
+} as const;
 
 // Configure chains & providers
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [polygon, linea, bsc, mainnet],
+  [customPolygon, customLinea, bsc, mainnet],
   [publicProvider()]
 );
 

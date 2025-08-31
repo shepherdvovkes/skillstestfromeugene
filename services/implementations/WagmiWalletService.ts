@@ -38,6 +38,17 @@ export class WagmiWalletService implements IWalletService {
     };
 
     try {
+      // Check if already connected
+      const { isConnected } = this.wagmiAdapter.getAccount();
+      if (isConnected) {
+        console.log('Already connected, returning current state');
+        const account = await this.getAccount();
+        return {
+          success: true,
+          walletType: account?.walletType || connectorId
+        };
+      }
+
       // Find the appropriate connector
       const connectors = this.wagmiAdapter.getConnectors();
       const connector = connectors.find(c => c.id === connectorId);

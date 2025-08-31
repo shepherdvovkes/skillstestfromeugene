@@ -34,3 +34,16 @@ export * from '@testing-library/react';
 
 // Override the render function
 export { customRender as render };
+
+// Add a simple test to make this a valid test suite
+describe('Test Utils', () => {
+  it('should provide custom render function', () => {
+    expect(customRender).toBeDefined();
+    expect(typeof customRender).toBe('function');
+  });
+
+  it('should provide TestWrapper component', () => {
+    expect(TestWrapper).toBeDefined();
+    expect(typeof TestWrapper).toBe('function');
+  });
+});

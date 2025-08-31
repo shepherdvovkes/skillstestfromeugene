@@ -23,9 +23,22 @@ export const useWagmiWalletService = () => {
     
     connect: async (connector: Connector) => {
       try {
+        // Check if already connected before attempting to connect
+        if (isConnected) {
+          console.log('Already connected, skipping connection attempt');
+          return { success: true };
+        }
+        
         return await connectAsync({ connector });
       } catch (error) {
         console.error('Connection error:', error);
+        
+        // Handle ConnectorAlreadyConnectedError specifically
+        if (error instanceof Error && error.message.includes('already connected')) {
+          console.log('Connector already connected, returning success');
+          return { success: true };
+        }
+        
         throw error;
       }
     },

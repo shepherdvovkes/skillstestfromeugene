@@ -33,6 +33,15 @@ export class WalletErrorHandler implements IErrorHandler {
     severity: 'low' | 'medium' | 'high' | 'critical';
     userFriendly: boolean;
   } {
+    // Handle ConnectorAlreadyConnectedError specifically
+    if (error?.message?.includes('already connected') || error?.name === 'ConnectorAlreadyConnectedError') {
+      return {
+        type: 'connection',
+        severity: 'low',
+        userFriendly: true
+      };
+    }
+
     if (error?.code === APP_CONFIG.ERROR_CODES.METAMASK_PENDING_REQUEST) {
       return {
         type: 'wallet',
@@ -86,6 +95,15 @@ export class WalletErrorHandler implements IErrorHandler {
     maxAttempts?: number;
   } {
     const categorization = this.categorizeError(error);
+
+    // Handle already connected error - no recovery action needed
+    if (error?.message?.includes('already connected') || error?.name === 'ConnectorAlreadyConnectedError') {
+      return {
+        action: 'none',
+        delay: 0,
+        maxAttempts: 0
+      };
+    }
 
     switch (categorization.type) {
       case 'connection':

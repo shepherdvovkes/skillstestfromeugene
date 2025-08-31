@@ -1,0 +1,142 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Quick validation for PRs
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check code formatting
+        run: npm run format:check
+
+      - name: Type checking
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build check
+        run: npm run build
+
+  # Security check for PRs
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=high
+
+  # Size check
+  size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          # Check .next directory size
+          SIZE=$(du -sh .next | cut -f1)
+          echo "Bundle size: $SIZE"
+          
+          # Check if size is reasonable (adjust threshold as needed)
+          if [ "$SIZE" = "0" ]; then
+            echo "❌ Build failed or no output generated"
+            exit 1
+          fi
+          
+          echo "✅ Bundle size check passed"
+
+  # Comment PR status
+  comment:
+    name: Comment PR Status
+    runs-on: ubuntu-latest
+    needs: [validate, security-check, size-check]
+    if: always()
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha,
+            });
+            
+            const failedChecks = checks.check_runs.filter(check => check.conclusion === 'failure');
+            const passedChecks = checks.check_runs.filter(check => check.conclusion === 'success');
+            
+            let comment = `## 🔍 PR Validation Results\n\n`;
+            
+            if (failedChecks.length > 0) {
+              comment += `❌ **Failed Checks:**\n`;
+              failedChecks.forEach(check => {
+                comment += `- ${check.name}\n`;
+              });
+              comment += `\n`;
+            }
+            
+            if (passedChecks.length > 0) {
+              comment += `✅ **Passed Checks:**\n`;
+              passedChecks.forEach(check => {
+                comment += `- ${check.name}\n`;
+              });
+            }
+            
+            if (failedChecks.length === 0) {
+              comment += `\n🎉 **All checks passed!** This PR is ready for review.`;
+            } else {
+              comment += `\n⚠️ **Please fix the failed checks before merging.**`;
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: comment
+            });

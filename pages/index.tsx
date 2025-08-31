@@ -1,5 +1,6 @@
 import React from 'react';
 import { Web3StatusImproved } from '@/components/Web3StatusImproved';
+import { NetworkSwitcher } from '@/components/status/NetworkSwitcher';
 import { Toaster } from 'react-hot-toast';
 
 export default function Home() {
@@ -15,7 +16,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Wallet Connection */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -25,6 +26,26 @@ export default function Home() {
               showHealthMonitor={true}
               showAdvanced={false}
             />
+          </div>
+
+          {/* Network Status */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Network Status
+            </h2>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Switch Networks
+                  </div>
+                  <NetworkSwitcher />
+                </div>
+                <div className="text-xs text-gray-500">
+                  Supported: Polygon, Linea, BSC, Ethereum
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Advanced View */}

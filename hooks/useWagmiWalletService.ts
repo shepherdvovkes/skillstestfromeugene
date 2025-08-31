@@ -6,7 +6,7 @@ import { IWagmiAdapter } from '@/services/implementations/WagmiWalletService';
 export const useWagmiWalletService = () => {
   const { walletService } = useServiceContext();
   const { address, isConnected, connector } = useAccount();
-  const { connectAsync, isLoading, error: connectError } = useConnect();
+  const { connectAsync, isLoading, error: connectError, connectors } = useConnect();
   const { disconnectAsync } = useDisconnect();
 
   const wagmiAdapter: IWagmiAdapter = useMemo(() => ({
@@ -40,9 +40,9 @@ export const useWagmiWalletService = () => {
     },
     
     getConnectors: () => {
-      return [];
+      return connectors;
     }
-  }), [address, isConnected, connector, connectAsync, isLoading, connectError, disconnectAsync]);
+  }), [address, isConnected, connector, connectAsync, isLoading, connectError, disconnectAsync, connectors]);
 
   if (walletService && 'updateAdapter' in walletService) {
     (walletService as any).updateAdapter(wagmiAdapter);

@@ -15,12 +15,13 @@ export function securityMiddleware(request: NextRequest) {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
     "style-src 'self' 'unsafe-inline' https:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https: wss: ws:",
+    "connect-src 'self' https: wss: ws: https://*.walletconnect.com https://*.walletconnect.org",
     "font-src 'self' data: https:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
+    "frame-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://verify.walletconnect.com https://verify.walletconnect.org",
     "upgrade-insecure-requests"
   ].join('; ');
   
@@ -40,11 +41,11 @@ export function securityMiddleware(request: NextRequest) {
   }
   
   const searchParams = request.nextUrl.searchParams;
-  for (const [key, value] of searchParams.entries()) {
+  searchParams.forEach((value, key) => {
     if (SecurityUtils.sanitizeInput(value) !== value) {
       return new NextResponse('Invalid Query Parameter', { status: 400 });
     }
-  }
+  });
   
   const contentType = request.headers.get('content-type');
   if (contentType && !contentType.includes('application/json') && 

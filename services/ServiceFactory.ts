@@ -49,6 +49,7 @@ export class ServiceFactory {
       const storageService = this.createStorageService();
       const errorHandler = this.createErrorHandler();
       
+      // Use mock adapter for now - will be replaced by React-based service provider
       this.services.set(key, new WagmiWalletService(
         storageService,
         errorHandler,
@@ -63,6 +64,7 @@ export class ServiceFactory {
     if (!this.services.has(key)) {
       const errorHandler = this.createErrorHandler();
       
+      // Use mock hooks for now - will be replaced by React-based service provider
       this.services.set(key, new NetworkService(
         errorHandler,
         {

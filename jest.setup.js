@@ -30,16 +30,7 @@ jest.mock('wagmi', () => ({
   createClient: jest.fn(),
 }));
 
-jest.mock('@reown/walletkit', () => ({
-  useWallet: () => ({
-    address: '0x1234567890123456789012345678901234567890',
-    isConnected: false,
-    isConnecting: false,
-    isDisconnected: true,
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-  }),
-}));
+
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

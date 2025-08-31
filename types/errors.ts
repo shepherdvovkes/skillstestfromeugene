@@ -1,5 +1,5 @@
 export interface WalletError {
-  code?: number;
+  code?: number | string;
   message: string;
   name?: string;
   stack?: string;

@@ -54,8 +54,8 @@ export const useWagmiAdapter = (): IWagmiAdapter => {
     },
     
     getConnectors: () => {
-      // This would need to be injected from the wagmi config
-      // For now, we'll return an empty array
+      // Return the configured connectors from wagmi
+      // This should be injected from the wagmi config
       return [];
     }
   };

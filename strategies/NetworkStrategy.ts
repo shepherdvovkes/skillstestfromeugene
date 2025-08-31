@@ -119,7 +119,12 @@ export class PolygonStrategy implements NetworkStrategy {
       const data = await response.json();
       
       // Validate and sanitize response data
-      const sanitizedData = SecurityUtils.sanitizeJSON(data);
+      const sanitizedData = SecurityUtils.sanitizeJSON<{
+        fast: { maxFee: string };
+        standard: { maxFee: string };
+        safeLow: { maxFee: string };
+      }>(data);
+      
       if (!sanitizedData || !sanitizedData.fast || !sanitizedData.standard || !sanitizedData.safeLow) {
         throw new Error('Invalid gas station data structure');
       }

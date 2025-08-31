@@ -44,6 +44,10 @@ const nextConfig = {
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: ws: https://*.walletconnect.com https://*.walletconnect.org; font-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://verify.walletconnect.com https://verify.walletconnect.org; upgrade-insecure-requests"
           }
         ]
       }

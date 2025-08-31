@@ -67,8 +67,7 @@ export class MetaMaskStrategy implements WalletStrategy {
       
       return provider;
     } catch (error) {
-      // Use logger instead of console
-      walletLogger.warn('Failed to get MetaMask provider:', error);
+      console.warn('Failed to get MetaMask provider:', error);
       return null;
     }
   }
@@ -100,17 +99,19 @@ export class WalletConnectStrategy implements WalletStrategy {
   id = 'walletConnect';
   name = 'WalletConnect';
 
-  getErrorMessage(error: any): string {
-    if (error?.code === 'USER_REJECTED') {
-      return 'Connection was rejected by the user.';
-    }
-    if (error?.code === 'SESSION_EXPIRED') {
-      return 'Session expired. Please try connecting again.';
+  getErrorMessage(error: AppError): string {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      if (error.code === 'USER_REJECTED') {
+        return 'Connection was rejected by the user.';
+      }
+      if (error.code === 'SESSION_EXPIRED') {
+        return 'Session expired. Please try connecting again.';
+      }
     }
     return 'WalletConnect connection failed. Please try again.';
   }
 
-  validateConnection(provider: any): boolean {
+  validateConnection(provider: WalletProvider): boolean {
     return provider && typeof provider.request === 'function';
   }
 
@@ -130,8 +131,30 @@ export class WalletConnectStrategy implements WalletStrategy {
     return true;
   }
 
-  getProvider(): any {
+  getProvider(): WalletProvider | null {
     return null;
+  }
+
+  getCapabilities(): WalletCapabilities {
+    return {
+      supportsEthereum: true,
+      supportsPolygon: true,
+      supportsBSC: true,
+      supportsLinea: true,
+      supportsPersonalSign: true,
+      supportsTypedSign: true,
+      supportsTransactionSign: true
+    };
+  }
+
+  getInstallationInfo(): WalletInstallation {
+    return {
+      isInstalled: this.isInstalled(),
+      installationUrl: this.getInstallationUrl(),
+      browserCompatible: true,
+      mobileCompatible: true,
+      extensionCompatible: false
+    };
   }
 }
 
@@ -139,14 +162,16 @@ export class TokenPocketStrategy implements WalletStrategy {
   id = 'tokenPocket';
   name = 'TokenPocket';
 
-  getErrorMessage(error: any): string {
-    if (error?.code === 'USER_REJECTED') {
-      return 'Connection was rejected by the user.';
+  getErrorMessage(error: AppError): string {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      if (error.code === 'USER_REJECTED') {
+        return 'Connection was rejected by the user.';
+      }
     }
     return 'TokenPocket connection failed. Please check if TokenPocket is installed and unlocked.';
   }
 
-  validateConnection(provider: any): boolean {
+  validateConnection(provider: WalletProvider): boolean {
     return provider && typeof provider.request === 'function';
   }
 
@@ -167,8 +192,30 @@ export class TokenPocketStrategy implements WalletStrategy {
     return typeof window !== 'undefined' && !!(window as any).tokenpocket;
   }
 
-  getProvider(): any {
+  getProvider(): WalletProvider | null {
     return typeof window !== 'undefined' ? (window as any).tokenpocket : null;
+  }
+
+  getCapabilities(): WalletCapabilities {
+    return {
+      supportsEthereum: true,
+      supportsPolygon: true,
+      supportsBSC: true,
+      supportsLinea: true,
+      supportsPersonalSign: true,
+      supportsTypedSign: true,
+      supportsTransactionSign: true
+    };
+  }
+
+  getInstallationInfo(): WalletInstallation {
+    return {
+      isInstalled: this.isInstalled(),
+      installationUrl: this.getInstallationUrl(),
+      browserCompatible: true,
+      mobileCompatible: true,
+      extensionCompatible: false
+    };
   }
 }
 
@@ -176,14 +223,16 @@ export class BitgetWalletStrategy implements WalletStrategy {
   id = 'bitgetWallet';
   name = 'Bitget Wallet';
 
-  getErrorMessage(error: any): string {
-    if (error?.code === 'USER_REJECTED') {
-      return 'Connection was rejected by the user.';
+  getErrorMessage(error: AppError): string {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      if (error.code === 'USER_REJECTED') {
+        return 'Connection was rejected by the user.';
+      }
     }
     return 'Bitget Wallet connection failed. Please check if Bitget Wallet is installed and unlocked.';
   }
 
-  validateConnection(provider: any): boolean {
+  validateConnection(provider: WalletProvider): boolean {
     return provider && typeof provider.request === 'function';
   }
 
@@ -204,8 +253,30 @@ export class BitgetWalletStrategy implements WalletStrategy {
     return typeof window !== 'undefined' && !!(window as any).bitkeep;
   }
 
-  getProvider(): any {
+  getProvider(): WalletProvider | null {
     return typeof window !== 'undefined' ? (window as any).bitkeep : null;
+  }
+
+  getCapabilities(): WalletCapabilities {
+    return {
+      supportsEthereum: true,
+      supportsPolygon: true,
+      supportsBSC: true,
+      supportsLinea: true,
+      supportsPersonalSign: true,
+      supportsTypedSign: true,
+      supportsTransactionSign: true
+    };
+  }
+
+  getInstallationInfo(): WalletInstallation {
+    return {
+      isInstalled: this.isInstalled(),
+      installationUrl: this.getInstallationUrl(),
+      browserCompatible: true,
+      mobileCompatible: false,
+      extensionCompatible: true
+    };
   }
 }
 

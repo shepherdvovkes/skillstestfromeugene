@@ -15,6 +15,7 @@ export const NetworkStatusManager: React.FC<NetworkStatusManagerProps> = ({
     isSwitching,
     supportedNetworks,
     error,
+    isValidating,
     switchNetwork,
     validateNetwork,
     getNetworkStatus
@@ -42,6 +43,7 @@ export const NetworkStatusManager: React.FC<NetworkStatusManagerProps> = ({
       isSwitching={isSwitching}
       supportedNetworks={supportedNetworks}
       error={error}
+      isValidating={isValidating}
       onSwitchNetwork={handleSwitchNetwork}
       onValidateNetwork={handleValidateNetwork}
       getNetworkStatus={getNetworkStatus}

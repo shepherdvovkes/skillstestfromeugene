@@ -263,7 +263,7 @@ WALLET_RATE_LIMIT: 5,            // connections per minute
 For security issues or questions:
 - **Security Team**: security@example.com
 - **Bug Reports**: https://github.com/example/security
-- **Emergency**: +1-XXX-XXX-XXXX
+- **Emergency**: +1-555-0123 (Security Team)
 
 ## 🔄 Security Updates
 

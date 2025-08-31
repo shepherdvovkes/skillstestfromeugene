@@ -116,9 +116,9 @@ export class SecurityUtils {
       }
       
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        result[key as keyof T] = this.safeObjectAssign({}, value);
+        result[key as keyof T] = this.safeObjectAssign({}, value) as T[keyof T];
       } else {
-        result[key as keyof T] = value;
+        result[key as keyof T] = value as T[keyof T];
       }
     }
     

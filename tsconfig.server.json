@@ -13,6 +13,7 @@
   "include": [
     "server.ts",
     "server-simple.ts",
+    "server-https.ts",
     "config/production.ts",
     "ecosystem.config.ts"
   ],

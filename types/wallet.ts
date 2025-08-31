@@ -1,4 +1,3 @@
-// Strict types for wallet providers and connections
 export interface WalletProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
   on: (eventName: string, listener: (...args: unknown[]) => void) => void;
@@ -50,7 +49,6 @@ export interface WalletCapabilities {
   supportsTransactionSign: boolean;
 }
 
-// Wallet strategy interface with strict typing
 export interface WalletStrategy {
   id: string;
   name: string;
@@ -64,7 +62,6 @@ export interface WalletStrategy {
   getInstallationInfo(): WalletInstallation;
 }
 
-// Type guards for wallet providers
 export const isWalletProvider = (provider: unknown): provider is WalletProvider => {
   return (
     typeof provider === 'object' &&
@@ -91,14 +88,12 @@ export const isWalletConnectProvider = (provider: WalletProvider): boolean => {
   return provider.isWalletConnect === true;
 };
 
-// Wallet provider factory for safe provider creation
 export class WalletProviderFactory {
   static createProvider(provider: unknown): WalletProvider | null {
     if (!isWalletProvider(provider)) {
       return null;
     }
 
-    // Validate required methods exist
     const requiredMethods = ['request', 'on', 'removeListener'];
     for (const method of requiredMethods) {
       if (typeof (provider as any)[method] !== 'function') {
@@ -111,13 +106,11 @@ export class WalletProviderFactory {
 
   static validateProvider(provider: WalletProvider): boolean {
     try {
-      // Test basic functionality
       const testRequest = provider.request({ method: 'eth_chainId' });
       if (!(testRequest instanceof Promise)) {
         return false;
       }
 
-      // Test event handling
       const testListener = () => {};
       provider.on('test', testListener);
       provider.removeListener('test', testListener);
@@ -129,7 +122,6 @@ export class WalletProviderFactory {
   }
 }
 
-// Wallet connection state with strict typing
 export interface WalletConnectionState {
   isConnected: boolean;
   isConnecting: boolean;
@@ -142,7 +134,6 @@ export interface WalletConnectionState {
   lastActivity: number | null;
 }
 
-// Wallet connection actions with strict typing
 export interface WalletConnectionActions {
   connect: (walletType: string) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -151,7 +142,6 @@ export interface WalletConnectionActions {
   refreshConnection: () => Promise<void>;
 }
 
-// Wallet health status
 export interface WalletHealthStatus {
   isHealthy: boolean;
   lastCheck: number;

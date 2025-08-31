@@ -1,6 +1,5 @@
 import { APP_CONFIG } from '@/config/constants';
 
-// Security utilities for protecting against various attacks
 export class SecurityUtils {
   private static readonly SANITIZE_REGEX = /[<>\"'&]/g;
   private static readonly XSS_PATTERNS = [
@@ -12,9 +11,6 @@ export class SecurityUtils {
     /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
   ];
 
-  /**
-   * Sanitize user input to prevent XSS attacks
-   */
   static sanitizeInput(input: string): string {
     if (typeof input !== 'string') return '';
     
@@ -32,9 +28,6 @@ export class SecurityUtils {
       .trim();
   }
 
-  /**
-   * Validate and sanitize JSON input
-   */
   static sanitizeJSON<T>(input: string): T | null {
     try {
       const parsed = JSON.parse(input);
@@ -44,9 +37,6 @@ export class SecurityUtils {
     }
   }
 
-  /**
-   * Deep sanitize object properties
-   */
   private static deepSanitize<T>(obj: T): T {
     if (typeof obj === 'string') {
       return this.sanitizeInput(obj) as T;
@@ -68,9 +58,6 @@ export class SecurityUtils {
     return obj;
   }
 
-  /**
-   * Validate URL to prevent open redirect attacks
-   */
   static validateURL(url: string): boolean {
     try {
       const parsed = new URL(url);
@@ -90,9 +77,6 @@ export class SecurityUtils {
     }
   }
 
-  /**
-   * Rate limiting utility
-   */
   static createRateLimiter(maxRequests: number, windowMs: number) {
     const requests = new Map<string, number[]>();
     
@@ -100,46 +84,35 @@ export class SecurityUtils {
       const now = Date.now();
       const userRequests = requests.get(identifier) || [];
       
-      // Remove old requests outside the window
       const validRequests = userRequests.filter(time => now - time < windowMs);
       
       if (validRequests.length >= maxRequests) {
-        return false; // Rate limit exceeded
+        return false;
       }
       
       validRequests.push(now);
       requests.set(identifier, validRequests);
-      return true; // Request allowed
+      return true;
     };
   }
 
-  /**
-   * Validate wallet address format
-   */
   static validateWalletAddress(address: string): boolean {
     if (!address || typeof address !== 'string') return false;
     
-    // Ethereum address format: 0x + 40 hex characters
     const ethereumAddressRegex = /^0x[a-fA-F0-9]{40}$/;
     return ethereumAddressRegex.test(address);
   }
 
-  /**
-   * Validate chain ID
-   */
   static validateChainId(chainId: number): boolean {
     return APP_CONFIG.DEFAULT_NETWORK_IDS.includes(chainId);
   }
 
-  /**
-   * Prevent prototype pollution attacks
-   */
   static safeObjectAssign<T extends object>(target: T, source: any): T {
     const result = { ...target };
     
     for (const [key, value] of Object.entries(source)) {
       if (key === '__proto__' || key === 'constructor') {
-        continue; // Skip prototype pollution attempts
+        continue;
       }
       
       if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -152,9 +125,6 @@ export class SecurityUtils {
     return result;
   }
 
-  /**
-   * Generate secure random string
-   */
   static generateSecureToken(length: number = 32): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -167,7 +137,6 @@ export class SecurityUtils {
         result += chars[array[i] % chars.length];
       }
     } else {
-      // Fallback for environments without crypto
       for (let i = 0; i < length; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
       }
@@ -176,9 +145,6 @@ export class SecurityUtils {
     return result;
   }
 
-  /**
-   * Validate RPC request payload
-   */
   static validateRPCRequest(payload: any): boolean {
     if (!payload || typeof payload !== 'object') return false;
     
@@ -187,25 +153,18 @@ export class SecurityUtils {
     
     if (!hasRequiredFields) return false;
     
-    // Validate jsonrpc version
     if (payload.jsonrpc !== '2.0') return false;
     
-    // Validate method (only allow safe methods)
     const safeMethods = ['eth_blockNumber', 'eth_getBalance', 'eth_getTransactionCount'];
     if (!safeMethods.includes(payload.method)) return false;
     
-    // Validate params (must be array)
     if (!Array.isArray(payload.params)) return false;
     
-    // Validate id (must be number or string)
     if (typeof payload.id !== 'number' && typeof payload.id !== 'string') return false;
     
     return true;
   }
 }
 
-// Rate limiter instance for network requests
-export const networkRateLimiter = SecurityUtils.createRateLimiter(10, 60000); // 10 requests per minute
-
-// Rate limiter for wallet connections
-export const walletRateLimiter = SecurityUtils.createRateLimiter(5, 60000); // 5 connections per minute
+export const networkRateLimiter = SecurityUtils.createRateLimiter(10, 60000);
+export const walletRateLimiter = SecurityUtils.createRateLimiter(5, 60000);

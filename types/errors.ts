@@ -1,4 +1,3 @@
-// Strict error types for better type safety
 export interface WalletError {
   code?: number;
   message: string;
@@ -32,52 +31,40 @@ export interface ValidationError extends WalletError {
   constraint?: string;
 }
 
-// Union type for all possible errors
 export type AppError = WalletError | NetworkError | ConnectionError | StorageError | ValidationError;
 
-// Error codes enum for better maintainability
 export enum ErrorCode {
-  // MetaMask specific errors
   METAMASK_PENDING_REQUEST = -32002,
   METAMASK_LOCKED = -32003,
   METAMASK_METHOD_NOT_FOUND = -32601,
   
-  // RPC errors
   RPC_INVALID_REQUEST = -32600,
   RPC_METHOD_NOT_FOUND = -32601,
   RPC_INVALID_PARAMS = -32602,
   RPC_INTERNAL_ERROR = -32603,
   
-  // Wallet errors
   WALLET_USER_REJECTED = 'USER_REJECTED',
   WALLET_SESSION_EXPIRED = 'SESSION_EXPIRED',
   WALLET_NOT_INSTALLED = 'NOT_INSTALLED',
   
-  // Network errors
   NETWORK_UNSUPPORTED = 'NETWORK_UNSUPPORTED',
   NETWORK_SWITCH_FAILED = 'NETWORK_SWITCH_FAILED',
   NETWORK_VALIDATION_FAILED = 'NETWORK_VALIDATION_FAILED',
   
-  // Storage errors
   STORAGE_QUOTA_EXCEEDED = 'QuotaExceededError',
   STORAGE_ACCESS_DENIED = 'AccessDeniedError',
   
-  // Custom errors
   UNSUPPORTED_WALLET_TYPE = 'UNSUPPORTED_WALLET_TYPE',
   CONNECTION_FAILED = 'CONNECTION_FAILED',
   VALIDATION_FAILED = 'VALIDATION_FAILED'
 }
 
-// Error severity levels
 export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
 
-// Error categories
 export type ErrorCategory = 'connection' | 'network' | 'wallet' | 'storage' | 'validation' | 'unknown';
 
-// Recovery actions
 export type RecoveryAction = 'retry' | 'reconnect' | 'switch_network' | 'clear_storage' | 'none';
 
-// Error context for better debugging
 export interface ErrorContext {
   component: string;
   action: string;
@@ -90,7 +77,6 @@ export interface ErrorContext {
   requestId?: string;
 }
 
-// Error result with strict typing
 export interface ErrorResult {
   handled: boolean;
   message: string;
@@ -104,7 +90,6 @@ export interface ErrorResult {
   userFriendly: boolean;
 }
 
-// Type guards for better error handling
 export const isWalletError = (error: unknown): error is WalletError => {
   return typeof error === 'object' && error !== null && 'message' in error;
 };
@@ -125,7 +110,6 @@ export const isValidationError = (error: unknown): error is ValidationError => {
   return isWalletError(error) && 'field' in error;
 };
 
-// Error factory for consistent error creation
 export class ErrorFactory {
   static createWalletError(
     message: string,

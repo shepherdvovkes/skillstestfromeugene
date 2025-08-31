@@ -6,6 +6,7 @@ import { WagmiWalletService } from './implementations/WagmiWalletService';
 import { NetworkService } from './implementations/NetworkService';
 import { BrowserStorageService } from './implementations/BrowserStorageService';
 import { WalletErrorHandler } from './implementations/WalletErrorHandler';
+import { MockWagmiAdapter } from './implementations/WagmiAdapter';
 
 export interface ServiceFactoryConfig {
   storage?: Storage;
@@ -51,11 +52,7 @@ export class ServiceFactory {
       this.services.set(key, new WagmiWalletService(
         storageService,
         errorHandler,
-        {
-          useAccount: () => ({}),
-          useConnect: () => ({}),
-          useDisconnect: () => ({})
-        }
+        new MockWagmiAdapter()
       ));
     }
     return this.services.get(key);
@@ -69,8 +66,8 @@ export class ServiceFactory {
       this.services.set(key, new NetworkService(
         errorHandler,
         {
-          useNetwork: () => ({}),
-          useSwitchNetwork: () => ({})
+          useNetwork: () => ({} as any),
+          useSwitchNetwork: () => ({} as any)
         }
       ));
     }

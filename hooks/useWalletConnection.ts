@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useWalletService } from '@/contexts/ServiceContext';
 import { useErrorHandler } from '@/contexts/ServiceContext';
 import { walletRegistry } from '@/strategies/WalletStrategy';
+import { useWagmiWalletService } from './useWagmiWalletService';
 
 export interface WalletConnectionState {
   isConnected: boolean;
@@ -19,6 +20,7 @@ export interface WalletConnectionActions {
 
 export const useWalletConnection = (): WalletConnectionState & WalletConnectionActions => {
   const walletService = useWalletService();
+  const wagmiWalletService = useWagmiWalletService();
   const errorHandler = useErrorHandler();
   
   const [state, setState] = useState<WalletConnectionState>({
@@ -28,6 +30,28 @@ export const useWalletConnection = (): WalletConnectionState & WalletConnectionA
     walletType: null,
     error: null
   });
+
+  // Sync state with wagmi wallet service on mount and when it changes
+  useEffect(() => {
+    const syncState = async () => {
+      try {
+        const isConnected = wagmiWalletService.isConnected();
+        if (isConnected) {
+          const account = await wagmiWalletService.getAccount();
+          setState(prev => ({
+            ...prev,
+            isConnected: true,
+            address: account?.address || null,
+            walletType: wagmiWalletService.getLastConnectedWallet() || 'unknown'
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to sync wallet state:', error);
+      }
+    };
+
+    syncState();
+  }, [wagmiWalletService]);
 
   const connect = useCallback(async (walletType: string) => {
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
@@ -45,10 +69,12 @@ export const useWalletConnection = (): WalletConnectionState & WalletConnectionA
       const result = await walletService.connect(walletType);
       
       if (result.success) {
+        const account = await walletService.getAccount();
         setState(prev => ({
           ...prev,
           isConnected: true,
           isConnecting: false,
+          address: account?.address || null,
           walletType,
           error: null
         }));

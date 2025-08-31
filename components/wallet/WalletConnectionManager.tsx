@@ -23,8 +23,8 @@ export const WalletConnectionManager: React.FC<WalletConnectionManagerProps> = (
   } = useWalletConnection();
 
   const walletService = useWalletService();
-  const availableConnectors = walletService.getAvailableConnectors();
-  const lastConnectedWallet = walletService.getLastConnectedWallet();
+  const availableConnectors = walletService.getAvailableConnectors?.() || [];
+  const lastConnectedWallet = walletService.getLastConnectedWallet?.() || null;
 
   const availableWallets = walletRegistry.getAvailableStrategies();
 

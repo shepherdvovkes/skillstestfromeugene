@@ -7,8 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:prod": "NODE_ENV=production node server.js",
-    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "start:prod": "NODE_ENV=production ts-node --project tsconfig.server.json server.ts",
+    "pm2:start": "pm2 start ecosystem.config.ts --env production",
     "pm2:stop": "pm2 stop blockchain-wallet-demo",
     "pm2:restart": "pm2 restart blockchain-wallet-demo",
     "pm2:reload": "pm2 reload blockchain-wallet-demo",
@@ -24,6 +24,8 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@reown/appkit": "^1.8.1",
+    "@reown/walletkit": "^1.2.10",
     "clsx": "^2.0.0",
     "next": "^14.0.0",
     "react": "^18.2.0",
@@ -38,7 +40,7 @@
     "@tailwindcss/typography": "^0.5.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.11",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
@@ -48,6 +50,7 @@
     "jest-environment-jsdom": "^29.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.3.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },
   "keywords": [

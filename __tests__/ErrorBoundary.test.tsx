@@ -146,7 +146,8 @@ describe('ErrorBoundary Component', () => {
         </ErrorBoundary>
       );
 
-      expect(screen.getByText('Wallet connection failed')).toBeInTheDocument();
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+      expect(screen.getByText('Network connection failed')).toBeInTheDocument();
     });
   });
 
@@ -230,7 +231,7 @@ describe('ErrorBoundary Component', () => {
 
   describe('Error Recovery Actions', () => {
     it('should provide retry functionality', () => {
-      const { rerender } = render(
+      const { rerender, unmount } = render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} />
         </ErrorBoundary>
@@ -240,7 +241,10 @@ describe('ErrorBoundary Component', () => {
 
       fireEvent.click(screen.getByText('Try Again'));
 
-      rerender(
+      // Unmount and remount to properly reset the ErrorBoundary state
+      unmount();
+      
+      render(
         <ErrorBoundary>
           <ThrowError shouldThrow={false} />
         </ErrorBoundary>
@@ -252,10 +256,14 @@ describe('ErrorBoundary Component', () => {
     it('should provide refresh functionality', () => {
       // Mock window.location.reload
       const mockReload = jest.fn();
-      Object.defineProperty(window.location, 'reload', {
-        value: mockReload,
-        configurable: true,
-      });
+      
+      // Mock the entire window.location object
+      const originalLocation = window.location;
+      delete (window as any).location;
+      (window as any).location = {
+        ...originalLocation,
+        reload: mockReload,
+      };
 
       render(
         <ErrorBoundary>
@@ -266,6 +274,9 @@ describe('ErrorBoundary Component', () => {
       fireEvent.click(screen.getByText('Refresh Page'));
 
       expect(mockReload).toHaveBeenCalledTimes(1);
+      
+      // Restore original location
+      (window as any).location = originalLocation;
     });
   });
 

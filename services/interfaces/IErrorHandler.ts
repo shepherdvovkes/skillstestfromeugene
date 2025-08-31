@@ -3,6 +3,7 @@ export interface ErrorContext {
   action: string;
   walletType?: string;
   networkId?: number;
+  chainId?: number;
   timestamp: number;
 }
 

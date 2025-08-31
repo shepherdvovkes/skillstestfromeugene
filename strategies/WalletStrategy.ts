@@ -165,6 +165,8 @@ export class BitgetWalletStrategy implements WalletStrategy {
   }
 }
 
+
+
 export class WalletRegistry {
   private strategies: Map<string, WalletStrategy> = new Map();
 

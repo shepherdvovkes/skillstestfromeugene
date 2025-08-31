@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWalletService } from '@/contexts/ServiceContext';
 import { useNetworkService } from '@/contexts/ServiceContext';
+import { env } from '@/config/environment';
 
 export interface HealthStatus {
   isHealthy: boolean;
@@ -62,6 +63,11 @@ export const useHealthStatus = (): HealthStatus => {
     };
 
     updateHealth();
+
+    // Only run health checks if enabled
+    if (!env.ENABLE_HEALTH_CHECKS) {
+      return;
+    }
 
     const interval = setInterval(updateHealth, 30000);
 

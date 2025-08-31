@@ -1,5 +1,46 @@
 import '@testing-library/jest-dom';
 
+// Mock wagmi and related modules
+jest.mock('wagmi', () => ({
+  useAccount: () => ({
+    address: '0x1234567890123456789012345678901234567890',
+    isConnected: false,
+    isConnecting: false,
+    isDisconnected: true,
+  }),
+  useConnect: () => ({
+    connect: jest.fn(),
+    connectors: [],
+    isLoading: false,
+    error: null,
+  }),
+  useDisconnect: () => ({
+    disconnect: jest.fn(),
+  }),
+  useNetwork: () => ({
+    chain: null,
+    chains: [],
+  }),
+  useSwitchNetwork: () => ({
+    switchNetwork: jest.fn(),
+    isLoading: false,
+  }),
+  createConfig: jest.fn(),
+  configureChains: jest.fn(),
+  createClient: jest.fn(),
+}));
+
+jest.mock('@reown/walletkit', () => ({
+  useWallet: () => ({
+    address: '0x1234567890123456789012345678901234567890',
+    isConnected: false,
+    isConnecting: false,
+    isDisconnected: true,
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+  }),
+}));
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

@@ -5,27 +5,28 @@ import { IErrorHandler, ErrorContext } from '../interfaces/IErrorHandler';
 import { APP_CONFIG } from '@/config/constants';
 import { walletConnectionToast } from '@/utils/toast';
 
+// Interface for wagmi adapter to follow Dependency Inversion Principle
+export interface IWagmiAdapter {
+  getAccount(): { address?: string; isConnected: boolean; connector?: { id: string } };
+  getConnectionState(): { isConnecting: boolean; error: any };
+  connect(connector: Connector): Promise<any>;
+  disconnect(): Promise<void>;
+  getConnectors(): Connector[];
+}
+
 export class WagmiWalletService implements IWalletService {
   private storageService: IStorageService;
   private errorHandler: IErrorHandler;
-  private hooks: {
-    useAccount: typeof useAccount;
-    useConnect: typeof useConnect;
-    useDisconnect: typeof useDisconnect;
-  };
+  private wagmiAdapter: IWagmiAdapter;
 
   constructor(
     storageService: IStorageService,
     errorHandler: IErrorHandler,
-    hooks: {
-      useAccount: typeof useAccount;
-      useConnect: typeof useConnect;
-      useDisconnect: typeof useDisconnect;
-    }
+    wagmiAdapter: IWagmiAdapter
   ) {
     this.storageService = storageService;
     this.errorHandler = errorHandler;
-    this.hooks = hooks;
+    this.wagmiAdapter = wagmiAdapter;
   }
 
   async connect(connectorId: string): Promise<WalletConnectionResult> {
@@ -37,17 +38,28 @@ export class WagmiWalletService implements IWalletService {
     };
 
     try {
-      const result: WalletConnectionResult = {
-        success: true,
-        walletType: connectorId
-      };
-
-      if (result.success) {
-        this.saveLastConnectedWallet(connectorId);
-        walletConnectionToast.connected(connectorId);
+      // Find the appropriate connector
+      const connectors = this.wagmiAdapter.getConnectors();
+      const connector = connectors.find(c => c.id === connectorId);
+      
+      if (!connector) {
+        throw new Error(`Connector ${connectorId} not found`);
       }
 
-      return result;
+      // Attempt to connect using the adapter
+      const result = await this.wagmiAdapter.connect(connector);
+      
+      if (result) {
+        this.saveLastConnectedWallet(connectorId);
+        walletConnectionToast.connected(connectorId);
+        
+        return {
+          success: true,
+          walletType: connectorId
+        };
+      } else {
+        throw new Error('Connection failed');
+      }
     } catch (error) {
       const errorResult = this.errorHandler.handle(error, context);
       return {
@@ -65,6 +77,9 @@ export class WagmiWalletService implements IWalletService {
     };
 
     try {
+      // Use the adapter to disconnect
+      await this.wagmiAdapter.disconnect();
+      
       this.clearConnectionState();
       walletConnectionToast.disconnected();
     } catch (error) {
@@ -74,7 +89,20 @@ export class WagmiWalletService implements IWalletService {
 
   async getAccount(): Promise<Account | null> {
     try {
-      return null;
+      // Use the adapter to get account information
+      const { address, isConnected, connector } = this.wagmiAdapter.getAccount();
+      
+      if (!isConnected || !address) {
+        return null;
+      }
+
+      const walletType = connector?.id || this.getLastConnectedWallet() || 'unknown';
+      
+      return {
+        address,
+        walletType,
+        isConnected: true
+      };
     } catch (error) {
       const context: ErrorContext = {
         component: 'WagmiWalletService',
@@ -88,7 +116,9 @@ export class WagmiWalletService implements IWalletService {
 
   isConnected(): boolean {
     try {
-      return false;
+      // Use the adapter to check connection status
+      const { isConnected } = this.wagmiAdapter.getAccount();
+      return isConnected;
     } catch (error) {
       const context: ErrorContext = {
         component: 'WagmiWalletService',
@@ -102,7 +132,7 @@ export class WagmiWalletService implements IWalletService {
 
   getConnectors(): Connector[] {
     try {
-      return [];
+      return this.wagmiAdapter.getConnectors();
     } catch (error) {
       const context: ErrorContext = {
         component: 'WagmiWalletService',
@@ -131,10 +161,8 @@ export class WagmiWalletService implements IWalletService {
 
   getConnectionState(): { isConnecting: boolean; error: any } {
     try {
-      return {
-        isConnecting: false,
-        error: null
-      };
+      // Use the adapter to get connection state
+      return this.wagmiAdapter.getConnectionState();
     } catch (error) {
       const context: ErrorContext = {
         component: 'WagmiWalletService',
@@ -190,5 +218,10 @@ export class WagmiWalletService implements IWalletService {
       };
       this.errorHandler.handle(error, context);
     }
+  }
+
+  // Method to update the wagmi adapter (for React integration)
+  updateAdapter(adapter: IWagmiAdapter): void {
+    this.wagmiAdapter = adapter;
   }
 }

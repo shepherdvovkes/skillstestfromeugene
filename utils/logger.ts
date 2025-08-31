@@ -1,3 +1,5 @@
+import { env } from '@/config/environment';
+
 // Logger utility for consistent logging across the application
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -12,8 +14,8 @@ class Logger {
 
   constructor(config: Partial<LoggerConfig> = {}) {
     this.config = {
-      level: (process.env.NODE_ENV === 'production' ? 'warn' : 'debug') as LogLevel,
-      enabled: process.env.NODE_ENV !== 'test',
+      level: (env.NODE_ENV === 'production' ? 'warn' : 'debug') as LogLevel,
+      enabled: env.ENABLE_LOGGING,
       prefix: '[WalletApp]',
       ...config
     };

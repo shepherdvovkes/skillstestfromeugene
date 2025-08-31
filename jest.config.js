@@ -27,7 +27,7 @@ const customJestConfig = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(wagmi|@wagmi|@tanstack|viem|@viem)/)',
+    'node_modules/(?!(wagmi|@wagmi|@tanstack|viem|@viem|@reown)/)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],

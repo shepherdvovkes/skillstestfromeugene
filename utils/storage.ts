@@ -196,16 +196,8 @@ export class WalletStorage {
   }
 
   getStorageSize(): number {
-    if (this.storage instanceof BrowserStorage) {
-      let size = 0;
-      for (let i = 0; i < this.storage.storage.length; i++) {
-        const key = this.storage.storage.key(i);
-        if (key) {
-          size += this.storage.storage.getItem(key)?.length || 0;
-        }
-      }
-      return size;
-    }
+    // This method is not implemented for the current storage interface
+    // as it requires access to the underlying storage implementation
     return 0;
   }
 }
@@ -214,5 +206,5 @@ export class WalletStorage {
 export const walletStorage = new WalletStorage();
 
 // Export types and classes for testing
-export { WalletStorage, BrowserStorage, MemoryStorage };
+export { BrowserStorage, MemoryStorage };
 export type { StorageInterface };

@@ -46,13 +46,13 @@ describe('Toast Utility', () => {
     it('shows warning message', () => {
       walletToast.warning('Warning message');
 
-      expect(jest.requireMock('react-hot-toast').toast.warning).toHaveBeenCalledWith('Warning message', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Warning message', expect.any(Object));
     });
 
     it('shows info message', () => {
       walletToast.info('Info message');
 
-      expect(jest.requireMock('react-hot-toast').toast.info).toHaveBeenCalledWith('Info message', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Info message', expect.any(Object));
     });
 
     it('shows loading message', () => {
@@ -96,7 +96,7 @@ describe('Toast Utility', () => {
     it('shows disconnection message', () => {
       walletConnectionToast.disconnected();
 
-      expect(jest.requireMock('react-hot-toast').toast.info).toHaveBeenCalledWith('Wallet disconnected', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Wallet disconnected', expect.any(Object));
     });
 
     it('shows network switched message', () => {
@@ -108,7 +108,7 @@ describe('Toast Utility', () => {
     it('shows unsupported network warning', () => {
       walletConnectionToast.unsupportedNetwork('Testnet');
 
-      expect(jest.requireMock('react-hot-toast').toast.warning).toHaveBeenCalledWith(
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith(
         'Connected to unsupported network: Testnet. Please switch to a supported network.',
         expect.any(Object)
       );
@@ -123,13 +123,13 @@ describe('Toast Utility', () => {
     it('shows connection stale warning', () => {
       walletConnectionToast.connectionStale();
 
-      expect(jest.requireMock('react-hot-toast').toast.warning).toHaveBeenCalledWith('Connection may be stale. Please reconnect if needed.', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Connection may be stale. Please reconnect if needed.', expect.any(Object));
     });
 
     it('shows retry attempt message', () => {
       walletConnectionToast.retryAttempt(2, 3);
 
-      expect(jest.requireMock('react-hot-toast').toast.info).toHaveBeenCalledWith('Retrying connection... (2/3)', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Retrying connection... (2/3)', expect.any(Object));
     });
 
     it('shows max retries exceeded message', () => {
@@ -152,7 +152,7 @@ describe('Toast Utility', () => {
     it('shows network not supported', () => {
       networkToast.notSupported('Testnet');
 
-      expect(jest.requireMock('react-hot-toast').toast.warning).toHaveBeenCalledWith('Testnet is not supported. Please switch to a supported network.', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Testnet is not supported. Please switch to a supported network.', expect.any(Object));
     });
 
     it('shows network switching', () => {
@@ -184,7 +184,7 @@ describe('Toast Utility', () => {
     it('shows auto-reconnect disabled', () => {
       preferenceToast.autoReconnectDisabled();
 
-      expect(jest.requireMock('react-hot-toast').toast.info).toHaveBeenCalledWith('Auto-reconnect disabled', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Auto-reconnect disabled', expect.any(Object));
     });
 
     it('shows preferences saved', () => {
@@ -196,7 +196,7 @@ describe('Toast Utility', () => {
     it('shows preferences reset', () => {
       preferenceToast.reset();
 
-      expect(jest.requireMock('react-hot-toast').toast.info).toHaveBeenCalledWith('Preferences reset to default', expect.any(Object));
+      expect(jest.requireMock('react-hot-toast').toast).toHaveBeenCalledWith('Preferences reset to default', expect.any(Object));
     });
   });
 });

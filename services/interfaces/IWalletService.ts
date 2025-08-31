@@ -3,6 +3,7 @@ import { Connector } from 'wagmi';
 export interface Account {
   address: string;
   isConnected: boolean;
+  walletType?: string;
 }
 
 export interface WalletConnectionResult {

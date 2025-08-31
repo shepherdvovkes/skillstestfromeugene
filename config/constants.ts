@@ -20,7 +20,7 @@ export const APP_CONFIG = {
   },
   
   // Default Network IDs (for backward compatibility)
-  DEFAULT_NETWORK_IDS: [137, 59144, 56],
+  DEFAULT_NETWORK_IDS: [137, 59144, 56] as number[],
   
   // Timeout Configuration
   TIMEOUTS: {

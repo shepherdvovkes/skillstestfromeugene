@@ -68,14 +68,14 @@ export const walletToast = {
   },
 
   warning: (message: string, options?: ToastOptions) => {
-    return toast.warning(message, {
+    return toast(message, {
       ...warningToastStyles,
       ...options,
     });
   },
 
   info: (message: string, options?: ToastOptions) => {
-    return toast.info(message, {
+    return toast(message, {
       ...infoToastStyles,
       ...options,
     });

@@ -14,7 +14,6 @@ interface EnvironmentConfig {
   NEXT_PUBLIC_BSC_RPC_URL: string;
   
   // Feature flags
-  ENABLE_AUTO_RECONNECT: boolean;
   ENABLE_HEALTH_CHECKS: boolean;
   ENABLE_LOGGING: boolean;
 }
@@ -35,7 +34,6 @@ const validateEnvironment = (): EnvironmentConfig => {
     NEXT_PUBLIC_BSC_RPC_URL: process.env.NEXT_PUBLIC_BSC_RPC_URL || 'https://bsc-dataseed1.binance.org',
     
     // Feature flags
-    ENABLE_AUTO_RECONNECT: process.env.ENABLE_AUTO_RECONNECT !== 'false',
     ENABLE_HEALTH_CHECKS: process.env.ENABLE_HEALTH_CHECKS !== 'false',
     ENABLE_LOGGING: process.env.ENABLE_LOGGING !== 'false',
   };
@@ -46,15 +44,16 @@ const validateEnvironment = (): EnvironmentConfig => {
       console.warn('⚠️  Using demo WalletConnect project ID in production. Please set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.');
     }
     
-    if (!process.env.NEXT_PUBLIC_POLYGON_RPC_URL) {
+    // Only warn about RPC URLs if they're not set and we're using fallbacks
+    if (!process.env.NEXT_PUBLIC_POLYGON_RPC_URL && config.NEXT_PUBLIC_POLYGON_RPC_URL === 'https://polygon-rpc.com') {
       console.warn('⚠️  Using fallback Polygon RPC URL in production. Please set NEXT_PUBLIC_POLYGON_RPC_URL.');
     }
     
-    if (!process.env.NEXT_PUBLIC_LINEA_RPC_URL) {
+    if (!process.env.NEXT_PUBLIC_LINEA_RPC_URL && config.NEXT_PUBLIC_LINEA_RPC_URL === 'https://rpc.linea.build') {
       console.warn('⚠️  Using fallback Linea RPC URL in production. Please set NEXT_PUBLIC_LINEA_RPC_URL.');
     }
     
-    if (!process.env.NEXT_PUBLIC_BSC_RPC_URL) {
+    if (!process.env.NEXT_PUBLIC_BSC_RPC_URL && config.NEXT_PUBLIC_BSC_RPC_URL === 'https://bsc-dataseed1.binance.org') {
       console.warn('⚠️  Using fallback BSC RPC URL in production. Please set NEXT_PUBLIC_BSC_RPC_URL.');
     }
   }
@@ -70,37 +69,4 @@ export const isProduction = (): boolean => env.NODE_ENV === 'production';
 export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
 export const isTest = (): boolean => env.NODE_ENV === 'test';
 
-// Environment-specific configurations
-export const getEnvironmentConfig = () => {
-  const baseConfig = {
-    enableLogging: env.ENABLE_LOGGING,
-    enableAutoReconnect: env.ENABLE_AUTO_RECONNECT,
-    enableHealthChecks: env.ENABLE_HEALTH_CHECKS,
-  };
 
-  switch (env.NODE_ENV) {
-    case 'production':
-      return {
-        ...baseConfig,
-        enableLogging: false, // Disable logging in production by default
-        enableAutoReconnect: true,
-        enableHealthChecks: true,
-      };
-    case 'development':
-      return {
-        ...baseConfig,
-        enableLogging: true,
-        enableAutoReconnect: true,
-        enableHealthChecks: true,
-      };
-    case 'test':
-      return {
-        ...baseConfig,
-        enableLogging: false,
-        enableAutoReconnect: false,
-        enableHealthChecks: false,
-      };
-    default:
-      return baseConfig;
-  }
-};

@@ -1,32 +1,36 @@
-export interface WalletStrategy {
+import { WalletStrategy as IWalletStrategy, WalletProvider, AppError, WalletCapabilities, WalletInstallation } from '@/types/wallet';
+
+export interface WalletStrategy extends IWalletStrategy {
   id: string;
   name: string;
-  getErrorMessage(error: any): string;
-  validateConnection(provider: any): boolean;
+  getErrorMessage(error: AppError): string;
+  validateConnection(provider: WalletProvider): boolean;
   getConnectionSteps(): string[];
   getInstallationUrl(): string;
   isInstalled(): boolean;
-  getProvider(): any;
+  getProvider(): WalletProvider | null;
+  getCapabilities(): WalletCapabilities;
+  getInstallationInfo(): WalletInstallation;
 }
 
 export class MetaMaskStrategy implements WalletStrategy {
   id = 'metaMask';
   name = 'MetaMask';
 
-  getErrorMessage(error: any): string {
-    if (error?.code === -32002) {
+  getErrorMessage(error: AppError): string {
+    if (error.code === -32002) {
       return 'MetaMask is already processing a request. Please wait.';
     }
-    if (error?.code === -32003) {
+    if (error.code === -32003) {
       return 'MetaMask is locked. Please unlock your wallet.';
     }
-    if (error?.code === -32601) {
+    if (error.code === -32601) {
       return 'MetaMask method not found. Please update MetaMask.';
     }
     return 'MetaMask connection failed. Please check if MetaMask is installed and unlocked.';
   }
 
-  validateConnection(provider: any): boolean {
+  validateConnection(provider: WalletProvider): boolean {
     return provider && typeof provider.request === 'function';
   }
 
@@ -47,30 +51,48 @@ export class MetaMaskStrategy implements WalletStrategy {
     return typeof window !== 'undefined' && !!(window as any).ethereum;
   }
 
-  getProvider(): any {
+  getProvider(): WalletProvider | null {
     try {
       if (typeof window === 'undefined') return null;
       
-      const provider = (window as any).ethereum;
+      const ethereum = (window as { ethereum?: unknown }).ethereum;
+      if (!ethereum) return null;
       
-      // Validate provider to prevent malicious injection
-      if (!provider || typeof provider !== 'object') return null;
+      // Use the factory to safely create and validate the provider
+      const provider = WalletProviderFactory.createProvider(ethereum);
+      if (!provider) return null;
       
-      // Check for required methods
-      if (typeof provider.request !== 'function' || 
-          typeof provider.on !== 'function' || 
-          typeof provider.removeListener !== 'function') {
-        return null;
-      }
-      
-      // Validate provider properties
-      if (typeof provider.isMetaMask !== 'boolean') return null;
+      // Additional MetaMask-specific validation
+      if (!provider.isMetaMask) return null;
       
       return provider;
     } catch (error) {
-      console.warn('Failed to get MetaMask provider:', error);
+      // Use logger instead of console
+      walletLogger.warn('Failed to get MetaMask provider:', error);
       return null;
     }
+  }
+
+  getCapabilities(): WalletCapabilities {
+    return {
+      supportsEthereum: true,
+      supportsPolygon: true,
+      supportsBSC: true,
+      supportsLinea: true,
+      supportsPersonalSign: true,
+      supportsTypedSign: true,
+      supportsTransactionSign: true
+    };
+  }
+
+  getInstallationInfo(): WalletInstallation {
+    return {
+      isInstalled: this.isInstalled(),
+      installationUrl: this.getInstallationUrl(),
+      browserCompatible: true,
+      mobileCompatible: false,
+      extensionCompatible: true
+    };
   }
 }
 
